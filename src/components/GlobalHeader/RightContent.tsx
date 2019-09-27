@@ -8,6 +8,7 @@ import HeaderSearch from '../HeaderSearch';
 import SelectLang from '../SelectLang';
 import styles from './index.less';
 import NoticeIconView from './NoticeIconView';
+
 export type SiderTheme = 'light' | 'dark';
 export interface GlobalHeaderRightProps extends ConnectProps {
   theme?: SiderTheme;
@@ -63,7 +64,7 @@ const GlobalHeaderRight: React.SFC<GlobalHeaderRightProps> = props => {
       </Tooltip>
       <NoticeIconView />
       <Avatar menu />
-      <SelectLang className={styles.action} />
+      {/* <SelectLang className={styles.action} /> */}
     </div>
   );
 };

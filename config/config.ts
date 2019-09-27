@@ -6,6 +6,16 @@ import webpackPlugin from './plugin.config';
 const { pwa, primaryColor } = defaultSettings; // preview.pro.ant.design only do not use in your production ;
 // preview.pro.ant.design 专用环境变量，请不要在你的项目中使用它。
 
+const originalConsoleError = console.error;
+if (console.error === originalConsoleError) {
+  console.error = (...args) => {
+    if (args[0].indexOf('[React Intl] Missing message:') === 0) {
+      return;
+    }
+    originalConsoleError.call(console, ...args);
+  };
+}
+
 const { ANT_DESIGN_PRO_ONLY_DO_NOT_USE_IN_YOUR_PRODUCTION } = process.env;
 const isAntDesignProPreview = ANT_DESIGN_PRO_ONLY_DO_NOT_USE_IN_YOUR_PRODUCTION === 'site';
 const plugins: IPlugin[] = [
@@ -18,7 +28,7 @@ const plugins: IPlugin[] = [
       },
       locale: {
         // default false
-        enable: true,
+        enable: false,
         // default zh-CN
         default: 'en-US',
         // default true, when it is true, will use `navigator.language` overwrite default
@@ -143,6 +153,48 @@ export default {
                   component: './dashboard/workplace',
                 },
               ],
+            },
+            {
+              name: 'Страница организации',
+              icon: 'user',
+              path: '/organization/:organization',
+              component: './organization/center',
+            },
+            {
+              name: 'Заявка на участие',
+              icon: '',
+              path: '/apply-event/:event',
+              component: './eventReg',
+            },
+            {
+              name: 'Заявка на участие отправлена',
+              icon: '',
+              path: '/apply-event-success',
+              component: './eventReg/success',
+            },
+            {
+              name: 'Маркет',
+              icon: '',
+              path: '/market',
+              component: './market',
+            },
+            {
+              name: 'Форма выгорания',
+              icon: '',
+              path: '/feedback',
+              component: './feedback',
+            },
+            {
+              name: 'Волонтеру плохо',
+              icon: '',
+              path: '/feedback/bad',
+              component: './feedback/bad',
+            },
+            {
+              name: 'Волонтеру ок',
+              icon: '',
+              path: '/feedback/good',
+              component: './feedback/good',
             },
             {
               path: '/form',
@@ -342,7 +394,7 @@ export default {
         resourcePath: string;
       },
       _: string,
-      localName: string
+      localName: string,
     ) => {
       if (
         context.resourcePath.includes('node_modules') ||

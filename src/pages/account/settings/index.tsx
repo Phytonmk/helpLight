@@ -1,16 +1,15 @@
 import React, { Component } from 'react';
 
 import { Dispatch } from 'redux';
-import { FormattedMessage } from 'umi-plugin-react/locale';
 import { GridContent } from '@ant-design/pro-layout';
 import { Menu } from 'antd';
 import { connect } from 'dva';
 import BaseView from './components/base';
-import BindingView from './components/binding';
 import { CurrentUser } from './data.d';
-import NotificationView from './components/notification';
-import SecurityView from './components/security';
 import styles from './style.less';
+import ContactsView from './components/ContactsView';
+import Skills from './components/Skills';
+import Organizations from './components/Organizations';
 
 const { Item } = Menu;
 
@@ -19,7 +18,7 @@ interface SettingsProps {
   currentUser: CurrentUser;
 }
 
-type SettingsStateKeys = 'base' | 'security' | 'binding' | 'notification';
+type SettingsStateKeys = 'base' | 'organization' | 'contacts' | 'skills';
 interface SettingsState {
   mode: 'inline' | 'horizontal';
   menuMap: {
@@ -30,28 +29,16 @@ interface SettingsState {
 @connect(({ accountSettings }: { accountSettings: { currentUser: CurrentUser } }) => ({
   currentUser: accountSettings.currentUser,
 }))
-class Settings extends Component<
-  SettingsProps,
-  SettingsState
-> {
+class Settings extends Component<SettingsProps, SettingsState> {
   main: HTMLDivElement | undefined = undefined;
 
   constructor(props: SettingsProps) {
     super(props);
     const menuMap = {
-      base: <FormattedMessage id="account-settings.menuMap.basic" defaultMessage="Basic Settings" />,
-      security: (
-        <FormattedMessage id="account-settings.menuMap.security" defaultMessage="Security Settings" />
-      ),
-      binding: (
-        <FormattedMessage id="account-settings.menuMap.binding" defaultMessage="Account Binding" />
-      ),
-      notification: (
-        <FormattedMessage
-          id="account-settings.menuMap.notification"
-          defaultMessage="New Message Notification"
-        />
-      ),
+      base: 'Профиль',
+      organization: 'Мои Организации',
+      contacts: 'Контакты',
+      skills: 'Навыки',
     };
     this.state = {
       mode: 'inline',
@@ -116,12 +103,12 @@ class Settings extends Component<
     switch (selectKey) {
       case 'base':
         return <BaseView />;
-      case 'security':
-        return <SecurityView />;
-      case 'binding':
-        return <BindingView />;
-      case 'notification':
-        return <NotificationView />;
+      case 'contacts':
+        return <ContactsView />;
+      case 'organization':
+        return <Organizations />;
+      case 'skills':
+        return <Skills />;
       default:
         break;
     }

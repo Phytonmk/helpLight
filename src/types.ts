@@ -9,9 +9,11 @@ export interface Organization {
   tags: string[];
   address: string;
   phone: string;
+  participants: Volunteer[];
 }
 
 export interface Event {
+  type: 'event' | 'task';
   idEvent: string;
   dateFrom: string;
   dateTo: string;
@@ -27,7 +29,33 @@ export interface Event {
     found: number;
   }[];
   tokens: number;
-  idOrganization: number;
+  idOrganization: string;
+  applies: {
+    volunteer: Volunteer;
+    status: 'pending' | 'approved' | 'rejected';
+    volunteerComment: string;
+    organizationComment: string;
+  }[];
+  location: string | 'home';
+  tags: string[];
+}
+
+export interface Task {
+  id: string;
+  idOrganization: string;
+  dateFrom: string;
+  dateTo: string;
+  description: string;
+  location: string | 'home';
+  tags: string[];
+  peopleRequired: {
+    work: string;
+    desc: string;
+    requirements: string;
+    tokens: number;
+    amount: number;
+    found: number;
+  }[];
   applies: {
     volunteer: Volunteer;
     status: 'pending' | 'approved' | 'rejected';
@@ -61,11 +89,13 @@ export interface Volunteer {
   avatar: string;
   karma: number;
   tokens: number;
+  organizations: Organization[];
   reviews: {
     organization: Organization;
     content: string;
     rate: number;
   }[];
+  skills: string[];
   curatedBy: string;
   curates: string[];
   contacts: {
@@ -75,4 +105,10 @@ export interface Volunteer {
     fb: string;
     inst: string;
   };
+}
+
+export interface Skill {
+  idSkill: string;
+  description: string;
+  idVolunteer: string;
 }

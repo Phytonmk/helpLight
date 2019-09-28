@@ -34,7 +34,7 @@ export interface ModelType {
 }
 
 const Model: ModelType = {
-  namespace: 'accountSettings',
+  namespace: 'orgSettings',
 
   state: {
     currentUser: {},

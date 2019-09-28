@@ -1,107 +1,67 @@
-import { Button, Form, Input, Select, Upload, message } from 'antd';
-import { FormattedMessage, formatMessage } from 'umi-plugin-react/locale';
+import { Button, Form, Input, Upload, message, Spin, Avatar, DatePicker } from 'antd';
 import React, { Component, Fragment } from 'react';
-
+import moment from 'moment';
 import { FormComponentProps } from 'antd/es/form';
-import { connect } from 'dva';
-import { CurrentUser } from '../data.d';
-import GeographicView from './GeographicView';
-import PhoneView from './PhoneView';
+import Axios from 'axios';
 import styles from './BaseView.less';
+import { Organization } from '@/types';
 
 const FormItem = Form.Item;
-const { Option } = Select;
 
-// 头像组件 方便以后独立，增加裁剪之类的功能
-const AvatarView = ({ avatar }: { avatar: string }) => (
-  <Fragment>
-    <div className={styles.avatar_title}>
-      <FormattedMessage id="account-settings.basic.avatar" defaultMessage="Avatar" />
-    </div>
-    <div className={styles.avatar}>
-      <img src={avatar} alt="avatar" />
-    </div>
-    <Upload fileList={[]}>
-      <div className={styles.button_view}>
-        <Button icon="upload">
-          <FormattedMessage
-            id="account-settings.basic.change-avatar"
-            defaultMessage="Change avatar"
-          />
-        </Button>
+const AvatarView = ({ value, onChange }: { value: string; onChange: (url: string) => void }) => {
+  const [tmpUrl, setTmpUrl] = React.useState('');
+  return (
+    <Fragment>
+      <div className={styles.avatar_title}>Аватарка</div>
+      <div style={{ textAlign: 'center' }}>
+        <Avatar icon="user" size={100} src={tmpUrl || value} alt="avatar" />
       </div>
-    </Upload>
-  </Fragment>
-);
-interface SelectItem {
-  label: string;
-  key: string;
-}
-
-const validatorGeographic = (
-  _: any,
-  value: {
-    province: SelectItem;
-    city: SelectItem;
-  },
-  callback: (message?: string) => void,
-) => {
-  const { province, city } = value;
-  if (!province.key) {
-    callback('Please input your province!');
-  }
-  if (!city.key) {
-    callback('Please input your city!');
-  }
-  callback();
+      <br />
+      <br />
+      <Upload
+        fileList={[]}
+        action={file =>
+          new Promise(() => {
+            const formData = new FormData();
+            formData.append('uploadedFile', file);
+            Axios.post('http://185.251.89.17/api/Organization/upload', formData, {
+              headers: { token: localStorage.getItem('user') || '' },
+            })
+              .then(res => {
+                const url = `http://185.251.89.17/MyImages/${res.data}`;
+                setTmpUrl(url);
+                onChange(url);
+              })
+              .catch(console.error);
+          })
+        }
+        onChange={console.log}
+      >
+        <div style={{ textAlign: 'center', width: '100%' }}>
+          <Button icon="upload">Загрузить новую</Button>
+        </div>
+      </Upload>
+    </Fragment>
+  );
 };
 
-const validatorPhone = (rule: any, value: string, callback: (message?: string) => void) => {
-  const values = value.split('-');
-  if (!values[0]) {
-    callback('Please input your area code!');
-  }
-  if (!values[1]) {
-    callback('Please input your phone number!');
-  }
-  callback();
-};
-
-interface BaseViewProps extends FormComponentProps {
-  currentUser?: CurrentUser;
-}
-
-@connect(({ accountSettings }: { accountSettings: { currentUser: CurrentUser } }) => ({
-  currentUser: accountSettings.currentUser,
-}))
-class BaseView extends Component<BaseViewProps> {
+class BaseView extends Component<
+  FormComponentProps,
+  { organization: Organization | null; loading: boolean; submitting: boolean }
+> {
   view: HTMLDivElement | undefined = undefined;
 
+  state = { organization: null, loading: true, submitting: false };
+
   componentDidMount() {
-    this.setBaseInfo();
-  }
-
-  setBaseInfo = () => {
-    const { currentUser, form } = this.props;
-    if (currentUser) {
-      Object.keys(form.getFieldsValue()).forEach(key => {
-        const obj = {};
-        obj[key] = currentUser[key] || null;
-        form.setFieldsValue(obj);
-      });
-    }
-  };
-
-  getAvatarURL() {
-    const { currentUser } = this.props;
-    if (currentUser) {
-      if (currentUser.avatar) {
-        return currentUser.avatar;
-      }
-      const url = 'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png';
-      return url;
-    }
-    return '';
+    Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      console.log(res.data);
+      this.setState({ organization: res.data.organization, loading: false });
+    });
   }
 
   getViewDom = (ref: HTMLDivElement) => {
@@ -113,12 +73,29 @@ class BaseView extends Component<BaseViewProps> {
     const { form } = this.props;
     form.validateFields(err => {
       if (!err) {
-        message.success(formatMessage({ id: 'account-settings.basic.update.success' }));
+        const organization = { ...this.state.organization, ...this.props.form.getFieldsValue() };
+        this.setState({ submitting: true, organization });
+        Axios.post('http://185.251.89.17/api/Organization/UpdateOrgInfo', organization, {
+          headers: {
+            token: localStorage.getItem('user'),
+          },
+        })
+          .then(res => {
+            this.setState({ submitting: false });
+            message.success('Информация успешно обновлена');
+          })
+          .catch(() => {
+            this.setState({ submitting: false });
+            message.error('Не удалось обновить информацию');
+          });
       }
     });
   };
 
   render() {
+    if (this.state.loading) return <Spin />;
+    console.log(this.state.organization);
+
     const {
       form: { getFieldDecorator },
     } = this.props;
@@ -126,99 +103,35 @@ class BaseView extends Component<BaseViewProps> {
       <div className={styles.baseView} ref={this.getViewDom}>
         <div className={styles.left}>
           <Form layout="vertical" hideRequiredMark>
-            <FormItem label={formatMessage({ id: 'account-settings.basic.email' })}>
-              {getFieldDecorator('email', {
+            <FormItem>
+              {getFieldDecorator('avatar', {
+                initialValue: this.state.organization.avatar,
+              })(<AvatarView />)}
+            </FormItem>
+            <FormItem label="Название организации">
+              {getFieldDecorator('Name', {
+                initialValue: this.state.organization.name,
                 rules: [
                   {
                     required: true,
-                    message: formatMessage({ id: 'account-settings.basic.email-message' }, {}),
                   },
                 ],
               })(<Input />)}
             </FormItem>
-            <FormItem label={formatMessage({ id: 'account-settings.basic.nickname' })}>
-              {getFieldDecorator('name', {
-                rules: [
-                  {
-                    required: true,
-                    message: formatMessage({ id: 'account-settings.basic.nickname-message' }, {}),
-                  },
-                ],
-              })(<Input />)}
+            <FormItem label="Информация об организации">
+              {getFieldDecorator('desc', {
+                initialValue: this.state.organization.desc,
+              })(<Input.TextArea placeholder="Расскажите о себе" rows={4} />)}
             </FormItem>
-            <FormItem label={formatMessage({ id: 'account-settings.basic.profile' })}>
-              {getFieldDecorator('profile', {
-                rules: [
-                  {
-                    required: true,
-                    message: formatMessage({ id: 'account-settings.basic.profile-message' }, {}),
-                  },
-                ],
-              })(
-                <Input.TextArea
-                  placeholder={formatMessage({ id: 'account-settings.basic.profile-placeholder' })}
-                  rows={4}
-                />,
-              )}
+            <FormItem label="Информация об организации">
+              {getFieldDecorator('desc', {
+                initialValue: this.state.organization.desc,
+              })(<Input.TextArea placeholder="Расскажите о себе" rows={4} />)}
             </FormItem>
-            <FormItem label={formatMessage({ id: 'account-settings.basic.country' })}>
-              {getFieldDecorator('country', {
-                rules: [
-                  {
-                    required: true,
-                    message: formatMessage({ id: 'account-settings.basic.country-message' }, {}),
-                  },
-                ],
-              })(
-                <Select style={{ maxWidth: 220 }}>
-                  <Option value="China">中国</Option>
-                </Select>,
-              )}
-            </FormItem>
-            <FormItem label={formatMessage({ id: 'account-settings.basic.geographic' })}>
-              {getFieldDecorator('geographic', {
-                rules: [
-                  {
-                    required: true,
-                    message: formatMessage({ id: 'account-settings.basic.geographic-message' }, {}),
-                  },
-                  {
-                    validator: validatorGeographic,
-                  },
-                ],
-              })(<GeographicView />)}
-            </FormItem>
-            <FormItem label={formatMessage({ id: 'account-settings.basic.address' })}>
-              {getFieldDecorator('address', {
-                rules: [
-                  {
-                    required: true,
-                    message: formatMessage({ id: 'account-settings.basic.address-message' }, {}),
-                  },
-                ],
-              })(<Input />)}
-            </FormItem>
-            <FormItem label={formatMessage({ id: 'account-settings.basic.phone' })}>
-              {getFieldDecorator('phone', {
-                rules: [
-                  {
-                    required: true,
-                    message: formatMessage({ id: 'account-settings.basic.phone-message' }, {}),
-                  },
-                  { validator: validatorPhone },
-                ],
-              })(<PhoneView />)}
-            </FormItem>
-            <Button type="primary" onClick={this.handlerSubmit}>
-              <FormattedMessage
-                id="account-settings.basic.update"
-                defaultMessage="Update Information"
-              />
+            <Button type="primary" onClick={this.handlerSubmit} loading={this.state.submitting}>
+              Сохранить информацию
             </Button>
           </Form>
-        </div>
-        <div className={styles.right}>
-          <AvatarView avatar={this.getAvatarURL()} />
         </div>
       </div>
     );

@@ -13,6 +13,7 @@ import Link from 'umi/link';
 import { Dispatch } from 'redux';
 import { connect } from 'dva';
 import { formatMessage } from 'umi-plugin-react/locale';
+import { Redirect } from 'umi';
 import Authorized from '@/utils/Authorized';
 import RightContent from '@/components/GlobalHeader/RightContent';
 import { ConnectState } from '@/models/connect';
@@ -41,31 +42,22 @@ const menuDataRender = (menuList: MenuDataItem[]): MenuDataItem[] =>
     return Authorized.check(item.authority, localItem, null) as MenuDataItem;
   });
 
-const footerRender: BasicLayoutProps['footerRender'] = (_, defaultDom) => {
-  if (!isAntDesignPro()) {
-    return defaultDom;
-  }
-
-  return (
-    <>
-      {defaultDom}
-      <div
-        style={{
-          padding: '0px 24px 24px',
-          textAlign: 'center',
-        }}
-      >
-        <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">
-          <img
-            src="https://www.netlify.com/img/global/badges/netlify-color-bg.svg"
-            width="82px"
-            alt="netlify logo"
-          />
-        </a>
-      </div>
-    </>
-  );
-};
+const footerRender: BasicLayoutProps['footerRender'] = (_, defaultDom) => (
+  <div style={{ textAlign: 'center' }}>
+    <br />
+    <br />
+    <br />
+    <br />
+    HelpLight
+    <br />@<br />
+    Empire from scratch team
+    <br />
+    [VK Hackathon 2019]
+    <br />
+    <br />
+    <br />
+  </div>
+);
 
 const BasicLayout: React.FC<BasicLayoutProps> = props => {
   const { dispatch, children, settings } = props;
@@ -95,6 +87,11 @@ const BasicLayout: React.FC<BasicLayoutProps> = props => {
       });
     }
   };
+
+  console.log(localStorage.getItem('user'));
+  if (!localStorage.getItem('user')) {
+    // return <Redirect to="/user/login" />;
+  }
 
   return (
     <>

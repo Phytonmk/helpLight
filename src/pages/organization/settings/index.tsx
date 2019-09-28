@@ -1,16 +1,13 @@
 import React, { Component } from 'react';
 
 import { Dispatch } from 'redux';
-import { FormattedMessage } from 'umi-plugin-react/locale';
 import { GridContent } from '@ant-design/pro-layout';
 import { Menu } from 'antd';
 import { connect } from 'dva';
 import BaseView from './components/base';
-import BindingView from './components/binding';
 import { CurrentUser } from './data.d';
-import NotificationView from './components/notification';
-import SecurityView from './components/security';
 import styles from './style.less';
+import Volunteers from './components/Volunteers';
 
 const { Item } = Menu;
 
@@ -19,7 +16,7 @@ interface SettingsProps {
   currentUser: CurrentUser;
 }
 
-type SettingsStateKeys = 'base' | 'security' | 'binding' | 'notification';
+type SettingsStateKeys = 'base' | 'volunteers';
 interface SettingsState {
   mode: 'inline' | 'horizontal';
   menuMap: {
@@ -36,24 +33,8 @@ class Settings extends Component<SettingsProps, SettingsState> {
   constructor(props: SettingsProps) {
     super(props);
     const menuMap = {
-      base: (
-        <FormattedMessage id="account-settings.menuMap.basic" defaultMessage="Basic Settings" />
-      ),
-      security: (
-        <FormattedMessage
-          id="account-settings.menuMap.security"
-          defaultMessage="Security Settings"
-        />
-      ),
-      binding: (
-        <FormattedMessage id="account-settings.menuMap.binding" defaultMessage="Account Binding" />
-      ),
-      notification: (
-        <FormattedMessage
-          id="account-settings.menuMap.notification"
-          defaultMessage="New Message Notification"
-        />
-      ),
+      base: 'Профиль',
+      volunteers: 'Волонтеры',
     };
     this.state = {
       mode: 'inline',
@@ -118,12 +99,8 @@ class Settings extends Component<SettingsProps, SettingsState> {
     switch (selectKey) {
       case 'base':
         return <BaseView />;
-      case 'security':
-        return <SecurityView />;
-      case 'binding':
-        return <BindingView />;
-      case 'notification':
-        return <NotificationView />;
+      case 'volunteers':
+        return <Volunteers />;
       default:
         break;
     }

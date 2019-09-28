@@ -1,17 +1,32 @@
-import { Avatar, Card, Col, Divider, Icon, Input, Row, Tag } from 'antd';
+import {
+  Avatar,
+  Card,
+  Col,
+  Divider,
+  Icon,
+  Input,
+  Row,
+  Tag,
+  Skeleton,
+  message,
+  Comment,
+  Rate,
+} from 'antd';
 import React, { PureComponent } from 'react';
 
 import { Dispatch } from 'redux';
 import { GridContent } from '@ant-design/pro-layout';
 import Link from 'umi/link';
-import { RouteChildrenProps } from 'react-router';
+import { RouteChildrenProps, withRouter } from 'react-router';
 import { connect } from 'dva';
+import Axios from 'axios';
 import { ModalState } from './model';
 import Projects from './components/Projects';
 import Articles from './components/Articles';
 import Applications from './components/Applications';
 import { CurrentUser, TagType } from './data.d';
 import styles from './Center.less';
+import { Volunteer } from '@/types';
 
 const operationTabList = [
   {
@@ -46,205 +61,109 @@ interface CenterProps extends RouteChildrenProps {
   currentUserLoading: boolean;
 }
 interface CenterState {
-  newTags: TagType[];
-  tabKey: 'articles' | 'applications' | 'projects';
-  inputVisible: boolean;
-  inputValue: string;
+  volunteerLoading: boolean;
+  currentUserLoading: boolean;
+  volunteer: Volunteer;
+  currentUser: unknown;
 }
 
-@connect(
-  ({
-    loading,
-    accountCenter,
-  }: {
-    loading: { effects: { [key: string]: boolean } };
-    accountCenter: ModalState;
-  }) => ({
-    currentUser: accountCenter.currentUser,
-    currentUserLoading: loading.effects['accountCenter/fetchCurrent'],
-  }),
-)
-class Center extends PureComponent<
-  CenterProps,
-  CenterState
-> {
-  // static getDerivedStateFromProps(
-  //   props: accountCenterProps,
-  //   state: accountCenterState,
-  // ) {
-  //   const { match, location } = props;
-  //   const { tabKey } = state;
-  //   const path = match && match.path;
-
-  //   const urlTabKey = location.pathname.replace(`${path}/`, '');
-  //   if (urlTabKey && urlTabKey !== '/' && tabKey !== urlTabKey) {
-  //     return {
-  //       tabKey: urlTabKey,
-  //     };
-  //   }
-
-  //   return null;
-  // }
-
+class Center extends PureComponent<CenterProps, CenterState> {
   state: CenterState = {
-    newTags: [],
-    inputVisible: false,
-    inputValue: '',
-    tabKey: 'articles',
+    volunteer: null,
+    currentUser: null,
+    volunteerLoading: true,
+    currentUserLoading: true,
   };
 
   public input: Input | null | undefined = undefined;
 
   componentDidMount() {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'accountCenter/fetchCurrent',
+    const vId =
+      this.props.match && this.props.match.params && this.props.match.params.volunteer
+        ? this.props.match && this.props.match.params && this.props.match.params.volunteer
+        : localStorage.getItem('user');
+    Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${vId}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      this.setState({ volunteer: res.data.volunteer, volunteerLoading: false });
     });
-    dispatch({
-      type: 'accountCenter/fetch',
+    Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      this.setState({ currentUser: res.data, currentUserLoading: false });
     });
   }
 
-  onTabChange = (key: string) => {
-    // If you need to sync state to url
-    // const { match } = this.props;
-    // router.push(`${match.url}/${key}`);
-    this.setState({
-      tabKey: key as CenterState['tabKey'],
-    });
-  };
-
-  showInput = () => {
-    this.setState({ inputVisible: true }, () => this.input && this.input.focus());
-  };
-
-  saveInputRef = (input: Input | null) => {
-    this.input = input;
-  };
-
-  handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ inputValue: e.target.value });
-  };
-
-  handleInputConfirm = () => {
-    const { state } = this;
-    const { inputValue } = state;
-    let { newTags } = state;
-    if (inputValue && newTags.filter(tag => tag.label === inputValue).length === 0) {
-      newTags = [...newTags, { key: `new-${newTags.length}`, label: inputValue }];
-    }
-    this.setState({
-      newTags,
-      inputVisible: false,
-      inputValue: '',
-    });
-  };
-
-  renderChildrenByTabKey = (tabKey: CenterState['tabKey']) => {
-    if (tabKey === 'projects') {
-      return <Projects />;
-    }
-    if (tabKey === 'applications') {
-      return <Applications />;
-    }
-    if (tabKey === 'articles') {
-      return <Articles />;
-    }
-    return null;
-  };
-
   render() {
-    const { newTags, inputVisible, inputValue, tabKey } = this.state;
-    const { currentUser, currentUserLoading } = this.props;
-    const dataLoading = currentUserLoading || !(currentUser && Object.keys(currentUser).length);
+    if (this.state.volunteerLoading || this.state.currentUserLoading) return <Skeleton />;
+    if (!this.state.volunteer || !this.state.currentUser) return null;
+
+    const { volunteer } = this.state;
+
     return (
       <GridContent>
         <Row gutter={24}>
           <Col lg={7} md={24}>
-            <Card bordered={false} style={{ marginBottom: 24 }} loading={dataLoading}>
-              {!dataLoading ? (
-                <div>
-                  <div className={styles.avatarHolder}>
-                    <img alt="" src={currentUser.avatar} />
-                    <div className={styles.name}>{currentUser.name}</div>
-                    <div>{currentUser.signature}</div>
+            <Card bordered={false} style={{ marginBottom: 24 }}>
+              <div>
+                <div className={styles.avatarHolder}>
+                  <Avatar size={150} src={volunteer.avatar} />
+                  <br />
+                  <br />
+                  <div className={styles.name}>
+                    {volunteer.firstName} {volunteer.lastName}
                   </div>
-                  <div className={styles.detail}>
-                    <p>
-                      <i className={styles.title} />
-                      {currentUser.title}
-                    </p>
-                    <p>
-                      <i className={styles.group} />
-                      {currentUser.group}
-                    </p>
-                    <p>
-                      <i className={styles.address} />
-                      {currentUser.geographic.province.label}
-                      {currentUser.geographic.city.label}
-                    </p>
-                  </div>
-                  <Divider dashed />
-                  <div className={styles.tags}>
-                    <div className={styles.tagsTitle}>标签</div>
-                    {currentUser.tags.concat(newTags).map(item => (
-                      <Tag key={item.key}>{item.label}</Tag>
-                    ))}
-                    {inputVisible && (
-                      <Input
-                        ref={ref => this.saveInputRef(ref)}
-                        type="text"
-                        size="small"
-                        style={{ width: 78 }}
-                        value={inputValue}
-                        onChange={this.handleInputChange}
-                        onBlur={this.handleInputConfirm}
-                        onPressEnter={this.handleInputConfirm}
-                      />
-                    )}
-                    {!inputVisible && (
-                      <Tag
-                        onClick={this.showInput}
-                        style={{ background: '#fff', borderStyle: 'dashed' }}
-                      >
-                        <Icon type="plus" />
-                      </Tag>
-                    )}
-                  </div>
-                  <Divider style={{ marginTop: 16 }} dashed />
-                  <div className={styles.team}>
-                    <div className={styles.teamTitle}>团队</div>
-                    <Row gutter={36}>
-                      {currentUser.notice &&
-                        currentUser.notice.map(item => (
-                          <Col key={item.id} lg={24} xl={12}>
-                            <Link to={item.href}>
-                              <Avatar size="small" src={item.logo} />
-                              {item.member}
-                            </Link>
-                          </Col>
-                        ))}
-                    </Row>
-                  </div>
+                  <div>{volunteer.about}</div>
                 </div>
-              ) : null}
+                <Divider dashed />
+                <div className={styles.detail}>
+                  <div>Контакты:</div>
+                  {Object.keys(volunteer.contacts || {}).map(messenger => (
+                    <p>
+                      {messenger}: {volunteer.contacts[messenger]}
+                    </p>
+                  ))}
+                </div>
+                <Divider dashed />
+                <div className={styles.tags}>
+                  <div>Навыки:</div>
+                  {(volunteer.skills || []).map(item => (
+                    <Tag key={item.description}>{item.description}</Tag>
+                  ))}
+                </div>
+                <Divider style={{ marginTop: 16 }} dashed />
+              </div>
             </Card>
           </Col>
-          <Col lg={17} md={24}>
-            <Card
-              className={styles.tabsCard}
-              bordered={false}
-              tabList={operationTabList}
-              activeTabKey={tabKey}
-              onTabChange={this.onTabChange}
-            >
-              {this.renderChildrenByTabKey(tabKey)}
-            </Card>
-          </Col>
+
+          {this.state.currentUser.organization && (
+            <Col lg={17} md={24}>
+              <Card className={styles.tabsCard} bordered={false}>
+                {(volunteer.reviews || []).map(review => (
+                  <Comment
+                    author={review.organization.name}
+                    avatar={
+                      <Avatar src={review.organization.avatar} alt={review.organization.name} />
+                    }
+                    content={
+                      <div>
+                        <p>{review.content}</p>
+                        <Rate count={review.rate} />
+                      </div>
+                    }
+                  />
+                ))}
+              </Card>
+            </Col>
+          )}
         </Row>
       </GridContent>
     );
   }
 }
 
-export default Center;
+export default withRouter(Center);

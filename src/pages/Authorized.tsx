@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Redirect from 'umi/redirect';
 import { connect } from 'dva';
 import pathToRegexp from 'path-to-regexp';
@@ -39,7 +39,7 @@ const AuthComponent: React.FC<AuthComponentProps> = ({
 }) => {
   const { currentUser } = user;
   const { routes = [] } = route;
-  const isLogin = currentUser && currentUser.name;
+  const isLogin = localStorage.getItem('user');
   return (
     <Authorized
       authority={getRouteAuthority(location.pathname, routes) || ''}

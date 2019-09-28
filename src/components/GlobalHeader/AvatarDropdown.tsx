@@ -1,68 +1,91 @@
 import { Avatar, Icon, Menu, Spin } from 'antd';
 import { ClickParam } from 'antd/es/menu';
-import { FormattedMessage } from 'umi-plugin-react/locale';
 import React from 'react';
-import { connect } from 'dva';
 import router from 'umi/router';
 
-import { ConnectProps, ConnectState } from '@/models/connect';
-import { CurrentUser } from '@/models/user';
+import axios from 'axios';
 import HeaderDropdown from '../HeaderDropdown';
 import styles from './index.less';
 
-export interface GlobalHeaderRightProps extends ConnectProps {
-  currentUser?: CurrentUser;
-  menu?: boolean;
-}
+class AvatarDropdown extends React.Component<
+  {},
+  { userName: string; avatar: string; role: string }
+> {
+  state = {
+    userName: '',
+    avatar: '',
+    role: 'unknown',
+  };
 
-class AvatarDropdown extends React.Component<GlobalHeaderRightProps> {
+  componentDidMount() {
+    axios
+      .get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
+        headers: {
+          token: localStorage.getItem('user'),
+        },
+      })
+      .then(res => {
+        if (!res.data) {
+          localStorage.removeItem('user');
+          router.push('/');
+        } else if (res.data.volunteer) {
+          this.setState({
+            userName: `${res.data.volunteer.firstName} ${res.data.volunteer.lastName}`,
+            avatar: res.data.volunteer.avatar,
+            role: 'volunteer',
+          });
+        } else if (res.data.organization) {
+          this.setState({
+            userName: `${res.data.organization.name}`,
+            avatar: res.data.organization.avatar,
+            role: 'organization',
+          });
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('user');
+        router.push('/');
+      });
+  }
+
   onMenuClick = (event: ClickParam) => {
     const { key } = event;
 
     if (key === 'logout') {
-      const { dispatch } = this.props;
-      if (dispatch) {
-        dispatch({
-          type: 'login/logout',
-        });
-      }
-
+      localStorage.removeItem('user');
+      router.push('/');
       return;
     }
-    router.push(`/account/${key}`);
+    router.push(`/${key}`);
   };
 
   render(): React.ReactNode {
-    const { currentUser = { avatar: '', name: '' }, menu } = this.props;
-
     const menuHeaderDropdown = (
       <Menu className={styles.menu} selectedKeys={[]} onClick={this.onMenuClick}>
-        {menu && (
-          <Menu.Item key="center">
-            <Icon type="user" />
-            <FormattedMessage id="menu.account.center" defaultMessage="account center" />
-          </Menu.Item>
-        )}
-        {menu && (
-          <Menu.Item key="settings">
-            <Icon type="setting" />
-            <FormattedMessage id="menu.account.settings" defaultMessage="account settings" />
-          </Menu.Item>
-        )}
-        {menu && <Menu.Divider />}
+        <Menu.Item key={this.state.role === 'volunteer' ? 'account/center' : 'organization-center'}>
+          <Icon type="user" />
+          Аккаунт
+        </Menu.Item>
+        <Menu.Item
+          key={this.state.role === 'volunteer' ? 'account/settings' : 'organization-settings'}
+        >
+          <Icon type="setting" />
+          Настроить
+        </Menu.Item>
+        <Menu.Divider />
 
         <Menu.Item key="logout">
           <Icon type="logout" />
-          <FormattedMessage id="menu.account.logout" defaultMessage="logout" />
+          Выйти
         </Menu.Item>
       </Menu>
     );
 
-    return currentUser && currentUser.name ? (
+    return this.state.userName ? (
       <HeaderDropdown overlay={menuHeaderDropdown}>
         <span className={`${styles.action} ${styles.account}`}>
-          <Avatar size="small" className={styles.avatar} src={currentUser.avatar} alt="avatar" />
-          <span className={styles.name}>{currentUser.name}</span>
+          <Avatar size="small" className={styles.avatar} src={this.state.avatar} alt="avatar" />
+          <span>{this.state.userName}</span>
         </span>
       </HeaderDropdown>
     ) : (
@@ -70,6 +93,4 @@ class AvatarDropdown extends React.Component<GlobalHeaderRightProps> {
     );
   }
 }
-export default connect(({ user }: ConnectState) => ({
-  currentUser: user.currentUser,
-}))(AvatarDropdown);
+export default AvatarDropdown;

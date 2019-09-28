@@ -1,4 +1,4 @@
-import { Alert, Checkbox, Icon } from 'antd';
+import { Alert, Checkbox, Icon, Tooltip } from 'antd';
 import { FormattedMessage, formatMessage } from 'umi-plugin-react/locale';
 import React, { Component } from 'react';
 
@@ -7,6 +7,8 @@ import { Dispatch } from 'redux';
 import { FormComponentProps } from 'antd/es/form';
 import Link from 'umi/link';
 import { connect } from 'dva';
+import Axios from 'axios';
+import { withRouter, router } from 'umi';
 import { StateType } from './model';
 import LoginComponents from './components/Login';
 import styles from './style.less';
@@ -21,6 +23,8 @@ interface LoginProps {
 interface LoginState {
   type: string;
   autoLogin: boolean;
+  error: boolean;
+  loading: boolean;
 }
 export interface FormDataType {
   userName: string;
@@ -45,15 +49,14 @@ export interface FormDataType {
     submitting: loading.effects['userLogin/login'],
   }),
 )
-class Login extends Component<
-  LoginProps,
-  LoginState
-> {
+class Login extends Component<LoginProps, LoginState> {
   loginForm: FormComponentProps['form'] | undefined | null = undefined;
 
   state: LoginState = {
     type: 'account',
     autoLogin: true,
+    error: false,
+    loading: false,
   };
 
   changeAutoLogin = (e: CheckboxChangeEvent) => {
@@ -64,15 +67,23 @@ class Login extends Component<
 
   handleSubmit = (err: any, values: FormDataType) => {
     const { type } = this.state;
+    this.setState({ loading: true });
     if (!err) {
-      const { dispatch } = this.props;
-      dispatch({
-        type: 'userLogin/login',
-        payload: {
-          ...values,
-          type,
+      Axios.get('http://185.251.89.17/api/user/LoginUser', {
+        params: {
+          UserName: values.userName,
+          Password: values.password,
         },
-      });
+      })
+        .then(res => {
+          localStorage.setItem('user', res.data);
+          this.setState({ error: false, loading: false });
+          router.push('/');
+          console.log('ok');
+        })
+        .catch(() => {
+          this.setState({ error: true, loading: false });
+        });
     }
   };
 
@@ -80,33 +91,12 @@ class Login extends Component<
     this.setState({ type });
   };
 
-  onGetCaptcha = () =>
-    new Promise((resolve, reject) => {
-      if (!this.loginForm) {
-        return;
-      }
-      this.loginForm.validateFields(['mobile'], {}, (err: any, values: FormDataType) => {
-        if (err) {
-          reject(err);
-        } else {
-          const { dispatch } = this.props;
-          ((dispatch({
-            type: 'userLogin/getCaptcha',
-            payload: values.mobile,
-          }) as unknown) as Promise<any>)
-            .then(resolve)
-            .catch(reject);
-        }
-      });
-    });
-
   renderMessage = (content: string) => (
     <Alert style={{ marginBottom: 24 }} message={content} type="error" showIcon />
   );
 
   render() {
     const { userLogin, submitting } = this.props;
-    const { status, type: loginType } = userLogin;
     const { type, autoLogin } = this.state;
     return (
       <div className={styles.main}>
@@ -118,30 +108,27 @@ class Login extends Component<
             this.loginForm = form;
           }}
         >
-          <Tab key="account" tab={formatMessage({ id: 'user-login.login.tab-login-credentials' })}>
-            {status === 'error' &&
-              loginType === 'account' &&
-              !submitting &&
-              this.renderMessage(
-                formatMessage({ id: 'user-login.login.message-invalid-credentials' }),
-              )}
+          <Tab key="account" tab="Войти по логину и паролю">
+            {this.state.error &&
+              !this.state.loading &&
+              this.renderMessage('Неправильные логин или пароль')}
             <UserName
               name="userName"
-              placeholder={`${formatMessage({ id: 'user-login.login.userName' })}: admin or user`}
+              placeholder="Логин"
               rules={[
                 {
                   required: true,
-                  message: formatMessage({ id: 'user-login.userName.required' }),
+                  message: 'Это обязательное поле',
                 },
               ]}
             />
             <Password
               name="password"
-              placeholder={`${formatMessage({ id: 'user-login.login.password' })}: ant.design`}
+              placeholder="Пароль"
               rules={[
                 {
                   required: true,
-                  message: formatMessage({ id: 'user-login.password.required' }),
+                  message: 'Это обязательное поле',
                 },
               ]}
               onPressEnter={e => {
@@ -150,60 +137,20 @@ class Login extends Component<
               }}
             />
           </Tab>
-          <Tab key="mobile" tab={formatMessage({ id: 'user-login.login.tab-login-mobile' })}>
-            {status === 'error' &&
-              loginType === 'mobile' &&
-              !submitting &&
-              this.renderMessage(
-                formatMessage({ id: 'user-login.login.message-invalid-verification-code' }),
-              )}
-            <Mobile
-              name="mobile"
-              placeholder={formatMessage({ id: 'user-login.phone-number.placeholder' })}
-              rules={[
-                {
-                  required: true,
-                  message: formatMessage({ id: 'user-login.phone-number.required' }),
-                },
-                {
-                  pattern: /^1\d{10}$/,
-                  message: formatMessage({ id: 'user-login.phone-number.wrong-format' }),
-                },
-              ]}
-            />
-            <Captcha
-              name="captcha"
-              placeholder={formatMessage({ id: 'user-login.verification-code.placeholder' })}
-              countDown={120}
-              onGetCaptcha={this.onGetCaptcha}
-              getCaptchaButtonText={formatMessage({ id: 'user-login.form.get-captcha' })}
-              getCaptchaSecondText={formatMessage({ id: 'user-login.captcha.second' })}
-              rules={[
-                {
-                  required: true,
-                  message: formatMessage({ id: 'user-login.verification-code.required' }),
-                },
-              ]}
-            />
-          </Tab>
           <div>
             <Checkbox checked={autoLogin} onChange={this.changeAutoLogin}>
-              <FormattedMessage id="user-login.login.remember-me" />
+              Запомнить меня
             </Checkbox>
             <a style={{ float: 'right' }} href="">
-              <FormattedMessage id="user-login.login.forgot-password" />
+              <Tooltip overlay="Постарайтесь вспомнить :'( или напишите админам, скоро эта функция станет доступна">
+                Забыли пароль?
+              </Tooltip>
             </a>
           </div>
-          <Submit loading={submitting}>
-            <FormattedMessage id="user-login.login.login" />
-          </Submit>
+          <Submit loading={this.state.loading}>Войти</Submit>
           <div className={styles.other}>
-            <FormattedMessage id="user-login.login.sign-in-with" />
-            <Icon type="alipay-circle" className={styles.icon} theme="outlined" />
-            <Icon type="taobao-circle" className={styles.icon} theme="outlined" />
-            <Icon type="weibo-circle" className={styles.icon} theme="outlined" />
             <Link className={styles.register} to="/user/register">
-              <FormattedMessage id="user-login.login.signup" />
+              Зарегестрироваться
             </Link>
           </div>
         </LoginComponents>

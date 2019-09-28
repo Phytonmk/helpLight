@@ -71,22 +71,30 @@ class BasicForm extends Component<BasicFormProps> {
       <PageHeaderWrapper content={<FormattedMessage id="form-basic-form.basic.description" />}>
         <Card bordered={false}>
           <Form onSubmit={this.handleSubmit} hideRequiredMark style={{ marginTop: 8 }}>
-            <FormItem {...formItemLayout} label={<FormattedMessage id="form-basic-form.title.label" />}>
+            <FormItem
+              {...formItemLayout}
+              label={<FormattedMessage id="form-basic-form.title.label" />}
+            >
               {getFieldDecorator('title', {
                 rules: [
                   {
                     required: true,
-                    message: formatMessage({ id: 'form-basic-form.title.required' }),
+                    message: 'Это обязательное поле',
                   },
                 ],
-              })(<Input placeholder={formatMessage({ id: 'form-basic-form.title.placeholder' })} />)}
+              })(
+                <Input placeholder={formatMessage({ id: 'form-basic-form.title.placeholder' })} />,
+              )}
             </FormItem>
-            <FormItem {...formItemLayout} label={<FormattedMessage id="form-basic-form.date.label" />}>
+            <FormItem
+              {...formItemLayout}
+              label={<FormattedMessage id="form-basic-form.date.label" />}
+            >
               {getFieldDecorator('date', {
                 rules: [
                   {
                     required: true,
-                    message: formatMessage({ id: 'form-basic-form.date.required' }),
+                    message: 'Это обязательное поле',
                   },
                 ],
               })(
@@ -99,12 +107,15 @@ class BasicForm extends Component<BasicFormProps> {
                 />,
               )}
             </FormItem>
-            <FormItem {...formItemLayout} label={<FormattedMessage id="form-basic-form.goal.label" />}>
+            <FormItem
+              {...formItemLayout}
+              label={<FormattedMessage id="form-basic-form.goal.label" />}
+            >
               {getFieldDecorator('goal', {
                 rules: [
                   {
                     required: true,
-                    message: formatMessage({ id: 'form-basic-form.goal.required' }),
+                    message: 'Это обязательное поле',
                   },
                 ],
               })(
@@ -123,7 +134,7 @@ class BasicForm extends Component<BasicFormProps> {
                 rules: [
                   {
                     required: true,
-                    message: formatMessage({ id: 'form-basic-form.standard.required' }),
+                    message: 'Это обязательное поле',
                   },
                 ],
               })(
@@ -164,7 +175,9 @@ class BasicForm extends Component<BasicFormProps> {
               }
             >
               {getFieldDecorator('invites')(
-                <Input placeholder={formatMessage({ id: 'form-basic-form.invites.placeholder' })} />,
+                <Input
+                  placeholder={formatMessage({ id: 'form-basic-form.invites.placeholder' })}
+                />,
               )}
             </FormItem>
             <FormItem

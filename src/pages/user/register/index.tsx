@@ -1,4 +1,17 @@
-import { Button, Col, Form, Input, Popover, Progress, Row, Select, message } from 'antd';
+import {
+  Button,
+  Col,
+  Form,
+  Input,
+  Popover,
+  Progress,
+  Row,
+  Select,
+  message,
+  Radio,
+  DatePicker,
+} from 'antd';
+import axios from 'axios';
 import { FormattedMessage, formatMessage } from 'umi-plugin-react/locale';
 import React, { Component } from 'react';
 import { Dispatch } from 'redux';
@@ -7,29 +20,18 @@ import Link from 'umi/link';
 import { connect } from 'dva';
 import router from 'umi/router';
 
+import { withRouter } from 'umi';
 import { StateType } from './model';
 import styles from './style.less';
 
+const uuidv4 = require('uuid/v4');
+
 const FormItem = Form.Item;
-const { Option } = Select;
-const InputGroup = Input.Group;
 
 const passwordStatusMap = {
-  ok: (
-    <div className={styles.success}>
-      <FormattedMessage id="user-register.strength.strong" />
-    </div>
-  ),
-  pass: (
-    <div className={styles.warning}>
-      <FormattedMessage id="user-register.strength.medium" />
-    </div>
-  ),
-  poor: (
-    <div className={styles.error}>
-      <FormattedMessage id="user-register.strength.short" />
-    </div>
-  ),
+  ok: <div className={styles.success}>Хороший пароль</div>,
+  pass: <div className={styles.warning}>Ненадежный пароль</div>,
+  poor: <div className={styles.error}>Плохой пароль</div>,
 };
 
 const passwordProgressMap: {
@@ -52,6 +54,7 @@ interface RegisterState {
   confirmDirty: boolean;
   visible: boolean;
   help: string;
+  loading: boolean;
   prefix: string;
 }
 
@@ -80,16 +83,14 @@ export interface UserRegisterParams {
     submitting: loading.effects['userRegister/submit'],
   }),
 )
-class Register extends Component<
-  RegisterProps,
-  RegisterState
-> {
+class Register extends Component<RegisterProps, RegisterState> {
   state: RegisterState = {
     count: 0,
+    loading: false,
     confirmDirty: false,
     visible: false,
     help: '',
-    prefix: '86',
+    prefix: '+7',
   };
 
   interval: number | undefined = undefined;
@@ -138,17 +139,47 @@ class Register extends Component<
 
   handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const { form, dispatch } = this.props;
+    const { form } = this.props;
     form.validateFields({ force: true }, (err, values) => {
-      if (!err) {
-        const { prefix } = this.state;
-        dispatch({
-          type: 'userRegister/submit',
-          payload: {
-            ...values,
-            prefix,
-          },
-        });
+      if (err === null) {
+        const userId = uuidv4('Test');
+        this.setState({ loading: true });
+        const volunteer = {
+          idVolunteer: uuidv4(),
+          firstName: values.firstName,
+          lastName: values.lastName,
+          birthday: values.birthday,
+        };
+        const organization = {
+          idOrganization: uuidv4(),
+          Name: values.Name,
+          city: values.city,
+          address: values.address,
+        };
+        const roles = {
+          volunteer,
+          organization,
+        };
+        const role = values.role || 'volunteer';
+        axios
+          .post('http://185.251.89.17/api/User', {
+            idUser: userId,
+            userName: values.email,
+            passwordHash: values.password,
+            role,
+            [role]: roles[role],
+          })
+          .then(() => {
+            localStorage.setItem('user', userId);
+            this.props.history.push('/');
+            this.setState({ loading: false });
+          })
+          .catch(() => {
+            message.error('Не удалось зарегестрироваться');
+            this.setState({ loading: false });
+          });
+      } else {
+        console.log(err);
       }
     });
   };
@@ -156,7 +187,7 @@ class Register extends Component<
   checkConfirm = (rule: any, value: string, callback: (messgae?: string) => void) => {
     const { form } = this.props;
     if (value && value !== form.getFieldValue('password')) {
-      callback(formatMessage({ id: 'user-register.password.twice' }));
+      callback('Пароли не совпадают!');
     } else {
       callback();
     }
@@ -166,7 +197,7 @@ class Register extends Component<
     const { visible, confirmDirty } = this.state;
     if (!value) {
       this.setState({
-        help: formatMessage({ id: 'user-register.password.required' }),
+        help: 'Это обязательное поле',
         visible: !!value,
       });
       callback('error');
@@ -216,24 +247,30 @@ class Register extends Component<
 
   render() {
     const { form, submitting } = this.props;
-    const { getFieldDecorator } = form;
+    const { getFieldDecorator, getFieldValue } = form;
     const { count, prefix, help, visible } = this.state;
     return (
-      <div className={styles.main}>
-        <h3>
-          <FormattedMessage id="user-register.register.register" />
-        </h3>
+      <div className={styles.main} style={{ textAlign: 'center' }}>
+        <h3>Регистрация</h3>
         <Form onSubmit={this.handleSubmit}>
           <FormItem>
-            {getFieldDecorator('mail', {
+            {getFieldDecorator('role', { initialValue: 'volunteer' })(
+              <Radio.Group size="large">
+                <Radio.Button value="volunteer">Я Волонтер</Radio.Button>
+                <Radio.Button value="organization">Я Музей</Radio.Button>
+              </Radio.Group>,
+            )}
+          </FormItem>
+          <FormItem>
+            {getFieldDecorator('email', {
               rules: [
                 {
                   required: true,
-                  message: formatMessage({ id: 'user-register.email.required' }),
+                  message: 'Это обязательное поле',
                 },
                 {
                   type: 'email',
-                  message: formatMessage({ id: 'user-register.email.wrong-format' }),
+                  message: 'Неправильный формат',
                 },
               ],
             })(
@@ -256,7 +293,7 @@ class Register extends Component<
                   {passwordStatusMap[this.getPasswordStatus()]}
                   {this.renderPasswordProgress()}
                   <div style={{ marginTop: 10 }}>
-                    <FormattedMessage id="user-register.strength.msg" />
+                    Пожалуйста, введите пароль в 6 или более символов
                   </div>
                 </div>
               }
@@ -270,13 +307,7 @@ class Register extends Component<
                     validator: this.checkPassword,
                   },
                 ],
-              })(
-                <Input
-                  size="large"
-                  type="password"
-                  placeholder={formatMessage({ id: 'user-register.password.placeholder' })}
-                />,
-              )}
+              })(<Input size="large" type="password" placeholder="Пароль" />)}
             </Popover>
           </FormItem>
           <FormItem>
@@ -284,94 +315,96 @@ class Register extends Component<
               rules: [
                 {
                   required: true,
-                  message: formatMessage({ id: 'user-register.confirm-password.required' }),
+                  message: 'Это обязательное поле',
                 },
                 {
                   validator: this.checkConfirm,
+                  message: 'Пароли не совпадают!',
                 },
               ],
-            })(
-              <Input
-                size="large"
-                type="password"
-                placeholder={formatMessage({ id: 'user-register.confirm-password.placeholder' })}
-              />,
-            )}
+            })(<Input size="large" type="password" placeholder="Повторите пароль" />)}
           </FormItem>
-          <FormItem>
-            <InputGroup compact>
-              <Select
-                size="large"
-                value={prefix}
-                onChange={this.changePrefix}
-                style={{ width: '20%' }}
-              >
-                <Option value="86">+86</Option>
-                <Option value="87">+87</Option>
-              </Select>
-              {getFieldDecorator('mobile', {
-                rules: [
-                  {
-                    required: true,
-                    message: formatMessage({ id: 'user-register.phone-number.required' }),
-                  },
-                  {
-                    pattern: /^\d{11}$/,
-                    message: formatMessage({ id: 'user-register.phone-number.wrong-format' }),
-                  },
-                ],
-              })(
-                <Input
-                  size="large"
-                  style={{ width: '80%' }}
-                  placeholder={formatMessage({ id: 'user-register.phone-number.placeholder' })}
-                />,
-              )}
-            </InputGroup>
-          </FormItem>
-          <FormItem>
-            <Row gutter={8}>
-              <Col span={16}>
-                {getFieldDecorator('captcha', {
+          {getFieldValue('role') !== 'organization' ? (
+            <>
+              <FormItem>
+                {getFieldDecorator('firstName', {
                   rules: [
                     {
                       required: true,
-                      message: formatMessage({ id: 'user-register.verification-code.required' }),
+                      message: 'Это обязательное поле',
+                    },
+                  ],
+                })(<Input size="large" placeholder="Ваше Имя" />)}
+              </FormItem>
+              <FormItem>
+                {getFieldDecorator('lastName', {
+                  rules: [
+                    {
+                      required: true,
+                      message: 'Это обязательное поле',
+                    },
+                  ],
+                })(<Input size="large" placeholder="Ваша Фамилия" />)}
+              </FormItem>
+              <FormItem>
+                {getFieldDecorator('birthday', {
+                  rules: [
+                    {
+                      required: true,
+                      message: 'Это обязательное поле',
                     },
                   ],
                 })(
-                  <Input
-                    size="large"
-                    placeholder={formatMessage({ id: 'user-register.verification-code.placeholder' })}
-                  />,
+                  <DatePicker style={{ width: '100%' }} placeholder="Дата рождения" size="large" />,
                 )}
-              </Col>
-              <Col span={8}>
-                <Button
-                  size="large"
-                  disabled={!!count}
-                  className={styles.getCaptcha}
-                  onClick={this.onGetCaptcha}
-                >
-                  {count
-                    ? `${count} s`
-                    : formatMessage({ id: 'user-register.register.get-verification-code' })}
-                </Button>
-              </Col>
-            </Row>
-          </FormItem>
+              </FormItem>
+            </>
+          ) : (
+            <>
+              <FormItem>
+                {getFieldDecorator('Name', {
+                  rules: [
+                    {
+                      required: true,
+                      message: 'Это обязательное поле',
+                    },
+                  ],
+                })(<Input size="large" placeholder="Название Музея" />)}
+              </FormItem>
+              <FormItem>
+                {getFieldDecorator('city', {
+                  rules: [
+                    {
+                      required: true,
+                      message: 'Это обязательное поле',
+                    },
+                  ],
+                })(<Input size="large" placeholder="Город" />)}
+              </FormItem>
+              <FormItem>
+                {getFieldDecorator('address', {
+                  rules: [
+                    {
+                      required: true,
+                      message: 'Это обязательное поле',
+                    },
+                  ],
+                })(<Input size="large" placeholder="Адрес" />)}
+              </FormItem>
+            </>
+          )}
           <FormItem>
             <Button
               size="large"
-              loading={submitting}
+              loading={this.state.loading}
               className={styles.submit}
               type="primary"
               htmlType="submit"
             >
-              <FormattedMessage id="user-register.register.register" />
+              Зарегестрироваться
             </Button>
             <Link className={styles.login} to="/user/login">
-              <FormattedMessage id="user-register.register.sign-in" />
+              Уже есть аккаунт?
             </Link>
           </FormItem>
         </Form>
@@ -380,4 +413,4 @@ class Register extends Component<
   }
 }
 
-export default Form.create<RegisterProps>()(Register);
+export default withRouter(Form.create<RegisterProps>()(Register));

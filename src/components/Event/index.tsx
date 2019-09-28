@@ -3,21 +3,51 @@ import { Card, List, Divider, Modal, Button, Input } from 'antd';
 import moment from 'moment-ru';
 import { Link } from 'umi';
 import ButtonGroup from 'antd/es/button/button-group';
+import Axios from 'axios';
+import uuidv4 from 'uuid/v4';
 import { Event as EventType } from '../../types';
 
 moment.locale('ru');
 
 export const Event = ({ event }: { event: EventType }) => {
+  const [volunteer, setVolunteer] = React.useState({});
+  const [organization, setOrganization] = React.useState({});
+  React.useEffect(() => {
+    Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      if (res.data.volunteer) {
+        setVolunteer(res.data.volunteer);
+      }
+      if (res.data.organization) {
+        setVolunteer(res.data.organization);
+      }
+    });
+  }, []);
   const [visibleModal, setVisibleModal] = React.useState(-1);
   const [orgComments, setOrgComments] = React.useState({});
   const handleModal = (index, newStatus) => {
     const apply = index;
     const comment = orgComments[index];
+    Axios.post('http://185.251.89.17/api/Application/CreateApplication', {
+      application: {
+        idApplication: uuidv4(),
+        volunteerComment: comment,
+        organizationComment: '',
+        idVolunteer: volunteer.idVolunteer,
+        idEvent: event.idEvent,
+      },
+    });
   };
-
   return (
     <List.Item>
-      <Card hoverable cover={<img alt={event.workDescription} src={event.poster} />}>
+      <Card
+        hoverable
+        style={{ minWidth: '100%' }}
+        cover={event.poster && <img alt={event.workDescription} src={event.poster} />}
+      >
         <Card.Meta description={event.workDescription} />
         <div>
           <div>Начнется: {moment(event.dateFrom).fromNow()}</div>
@@ -36,9 +66,11 @@ export const Event = ({ event }: { event: EventType }) => {
                   renderItem={stuff => (
                     <List.Item
                       extra={`${stuff.found}/${stuff.amount}`}
-                      actions={
-                        stuff.found < stuff.amount ? [<Link to="/">Подать заявку</Link>] : []
-                      }
+                      actions={[
+                        volunteer && stuff.found < stuff.amount && (
+                          <Link to="/">Подать заявку</Link>
+                        ),
+                      ]}
                     >
                       <List.Item.Meta
                         title={`${stuff.work} (Награда: ${stuff.tokens})`}
@@ -52,8 +84,7 @@ export const Event = ({ event }: { event: EventType }) => {
             </>
           )}
 
-          {(event.idOrganization.toString() === localStorage.getItem('helpLight-userId') ||
-            true) && (
+          {(event.idOrganization === localStorage.getItem('user') || true) && (
             <>
               <br />
               <br />

@@ -1,68 +1,61 @@
-import { Avatar, Card, Col, Divider, Icon, Input, Row, Tag } from 'antd';
+import { Avatar, Card, Col, Divider, Icon, Input, Row, Tag, Modal, Button } from 'antd';
 import React, { PureComponent } from 'react';
 
 import { Dispatch } from 'redux';
 import { GridContent } from '@ant-design/pro-layout';
 import Link from 'umi/link';
-import { RouteChildrenProps } from 'react-router';
-import { connect } from 'dva';
-import { ModalState } from './model';
+import { RouteChildrenProps, withRouter, RouterProps } from 'react-router';
+import TextArea from 'antd/es/input/TextArea';
+import Axios from 'axios';
 import Events from './components/Events';
 import Articles from './components/Articles';
 import { Article, Event, Organization } from '../../../types';
 import styles from './Center.less';
 
-interface CenterProps extends RouteChildrenProps {
-  dispatch: Dispatch<any>;
-  organization: Organization;
-  organizationLoading: boolean;
-  articles: Article[];
-  articlesLoading: boolean;
-  events: Event[];
-  eventsLoading: boolean;
-}
 interface CenterState {
   tabKey: 'articles' | 'events';
+  enterModal: boolean;
+  enterMessage: string;
+  enterLoading: boolean;
+  organizationLoading: boolean;
+  eventsLoading: boolean;
+  articlesLoading: boolean;
+  articles: Article[];
+  events: Event[];
+  organization: Organization;
 }
 
-@connect(
-  ({
-    loading,
-    organizationCenter,
-  }: {
-    loading: { effects: { [key: string]: boolean } };
-    organizationCenter: ModalState;
-  }) => ({
-    organization: organizationCenter.organization,
-    organizationLoading: loading.effects['organizationCenter/fetchOrganization'],
-    events: organizationCenter.events,
-    eventsLoading: loading.effects['organizationCenter/fetchEvents'],
-    articles: organizationCenter.articles,
-    articlesLoading: loading.effects['organizationCenter/fetchArticles'],
-  }),
-)
-class Center extends PureComponent<CenterProps, CenterState> {
+class Center extends PureComponent<RouterProps, CenterState> {
   state: CenterState = {
     tabKey: 'events',
+    enterModal: false,
+    enterMessage: '',
+    enterLoading: false,
+    organizationLoading: true,
+    eventsLoading: true,
+    articlesLoading: true,
   };
 
   public input: Input | null | undefined = undefined;
 
   componentDidMount() {
-    const { dispatch } = this.props;
-    if (this.props.match !== null) {
-      const { organization } = this.props.match.params as any;
-      dispatch({
-        type: 'organizationCenter/fetchOrganization',
-        payload: organization,
-      });
-      dispatch({
-        type: 'organizationCenter/fetchEvents',
-        payload: organization,
-      });
-      dispatch({
-        type: 'organizationCenter/fetchArticles',
-        payload: organization,
+    if (
+      this.props &&
+      this.props.match &&
+      this.props.match.params &&
+      this.props.match.params.organization
+    ) {
+      this.loadOrganization(this.props.match.params.organization);
+    } else {
+      Axios.get(
+        `http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`,
+        {
+          headers: {
+            token: localStorage.getItem('user'),
+          },
+        },
+      ).then(res => {
+        this.loadOrganization(res.data.organization.idOrganization);
       });
     }
   }
@@ -76,15 +69,52 @@ class Center extends PureComponent<CenterProps, CenterState> {
     });
   };
 
+  submitEntering = () => {
+    this.setState({ enterLoading: true });
+    // Axios.post('', {
+    //   enterMessage: this.state.enterMessage,
+    // })
+    this.setState({ enterLoading: false });
+    this.setState({ enterModal: false });
+    this.setState({ enterMessage: '' });
+  };
+
+  loadOrganization(oId) {
+    console.log(oId);
+    Axios.get(`http://185.251.89.17/api/Organization/GetOrganizationShortInfo/${oId}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      this.setState({ organization: res.data, organizationLoading: false });
+    });
+
+    Axios.get(`http://185.251.89.17/api/WallRecords/${oId}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      this.setState({ articles: res.data, articlesLoading: false });
+    });
+
+    Axios.get(`http://185.251.89.17/api/Event/getAllOrganizationEvents?id=${oId}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      this.setState({ events: res.data, eventsLoading: false });
+    });
+  }
+
   renderChildrenByTabKey = (tabKey: CenterState['tabKey']) => {
     if (tabKey === 'events') {
-      return <Events events={this.props.events || []} eventsLoading={this.props.eventsLoading} />;
+      return <Events events={this.state.events || []} eventsLoading={this.state.eventsLoading} />;
     }
     if (tabKey === 'articles') {
       return (
         <Articles
-          articles={this.props.articles || []}
-          articlesLoading={this.props.articlesLoading}
+          articles={this.state.articles || []}
+          articlesLoading={this.state.articlesLoading}
         />
       );
     }
@@ -93,7 +123,7 @@ class Center extends PureComponent<CenterProps, CenterState> {
 
   render() {
     const { tabKey } = this.state;
-    const { organization, organizationLoading } = this.props;
+    const { organization, organizationLoading } = this.state;
     const dataLoading = organizationLoading || !(organization && Object.keys(organization).length);
 
     const operationTabList = [
@@ -103,7 +133,7 @@ class Center extends PureComponent<CenterProps, CenterState> {
           <span>
             Мероприятия{' '}
             <span style={{ fontSize: 14 }}>
-              ({this.props.eventsLoading ? '...' : this.props.events.length})
+              ({this.state.eventsLoading ? '...' : this.state.events.length})
             </span>
           </span>
         ),
@@ -114,7 +144,7 @@ class Center extends PureComponent<CenterProps, CenterState> {
           <span>
             Новости{' '}
             <span style={{ fontSize: 14 }}>
-              ({this.props.articlesLoading ? '...' : this.props.articles.length})
+              ({this.state.articlesLoading ? '...' : this.state.articles.length})
             </span>
           </span>
         ),
@@ -144,18 +174,44 @@ class Center extends PureComponent<CenterProps, CenterState> {
                     </p>
                     <p>
                       <i className={styles.address} />
-                      {organization.address}
                       {organization.city}
                     </p>
                   </div>
                   <Divider dashed />
                   <div className={styles.tags}>
                     <div className={styles.tagsTitle}>Теги</div>
-                    {organization.tags.map(tag => (
+                    {(organization.tags || []).map(tag => (
                       <Tag key={tag}>{tag}</Tag>
                     ))}
                   </div>
                   <Divider style={{ marginTop: 16 }} dashed />
+                  {
+                    <Button type="primary" onClick={() => this.setState({ enterModal: true })}>
+                      Вступить в организацию
+                    </Button>
+                  }
+                  <Modal
+                    title="Отправить заявку"
+                    onOk={() => this.submitEntering()}
+                    visible={this.state.enterModal}
+                    onCancel={() => this.setState({ enterModal: false })}
+                    okText="Отправить заявку"
+                    cancelText="Отмена"
+                    loading={this.state.enterLoading}
+                  >
+                    <br />
+                    <br />
+                    Музей свяжется с вами чтобы подготовить документы, необходимые для волонтерской
+                    деятельности в нем. Укажите в поле ниже ваши контакты, по которым вам будет
+                    удобно связаться и немного расскажите о себе
+                    <br />
+                    <br />
+                    <TextArea
+                      placeholder="Ваши контакты и информация о себе"
+                      value={this.state.enterMessage}
+                      onChange={({ target: { value } }) => this.setState({ enterMessage: value })}
+                    />
+                  </Modal>
                 </div>
               ) : null}
             </Card>
@@ -177,4 +233,4 @@ class Center extends PureComponent<CenterProps, CenterState> {
   }
 }
 
-export default Center;
+export default withRouter(Center);

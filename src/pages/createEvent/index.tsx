@@ -12,6 +12,7 @@ import {
   Upload,
   List,
   Divider,
+  message,
 } from 'antd';
 import { FormattedMessage, formatMessage } from 'umi-plugin-react/locale';
 import React, { Component } from 'react';
@@ -20,6 +21,9 @@ import { Dispatch } from 'redux';
 import { FormComponentProps } from 'antd/es/form';
 import { PageHeaderWrapper } from '@ant-design/pro-layout';
 import { connect } from 'dva';
+import Axios from 'axios';
+import uuidv4 from 'uuid/v4';
+import { router } from 'umi';
 import styles from './style.less';
 import { Event } from '@/types';
 
@@ -128,7 +132,6 @@ const Volunteers: React.FC<VolunteersProps> = (props: VolunteersProps & { form: 
 };
 
 const FormItem = Form.Item;
-const { Option } = Select;
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 
@@ -138,15 +141,46 @@ interface BasicFormProps extends FormComponentProps {
 }
 
 class BasicForm extends Component<BasicFormProps> {
+  state = { organization: null, loading: true, submitting: false };
+
+  componentDidMount() {
+    Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      console.log(res.data);
+      this.setState({ organization: res.data.organization, loading: false });
+    });
+  }
+
   handleSubmit = (e: React.FormEvent) => {
     const { dispatch, form } = this.props;
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        dispatch({
-          type: 'formBasicForm/submitRegularForm',
-          payload: values,
-        });
+        const idEvent = uuidv4();
+        Axios.post('http://185.251.89.17/api/Event/CreateEvent', {
+          idEvent,
+          dateFrom: values.date[0].format(),
+          dateTo: values.date[1].format(),
+          type: values.type,
+          idOrganization: this.state.organization.idOrganization,
+          title: values.title,
+          workDescription: values.workDescription,
+          peopleRequired: values.peopleRequired.map(volunteer => ({
+            ...volunteer,
+            idPeopleRequired: uuidv4(),
+            idEvent,
+          })),
+        })
+          .then(() => {
+            message.success('Мероприятие создано');
+            router.push('/');
+          })
+          .catch(() => {
+            message.error('Не удалось создать мероприятие');
+          });
       }
     });
   };
@@ -161,6 +195,21 @@ class BasicForm extends Component<BasicFormProps> {
       <PageHeaderWrapper content={<FormattedMessage id="form-basic-form.basic.description" />}>
         <Card bordered={false}>
           <Form onSubmit={this.handleSubmit} hideRequiredMark style={{ marginTop: 8 }}>
+            <FormItem {...formItemLayout} label="Тип">
+              {getFieldDecorator('type', {
+                rules: [
+                  {
+                    required: true,
+                    message: 'Обязательное поле',
+                  },
+                ],
+              })(
+                <Radio.Group>
+                  <Radio.Button value="event">Мероприятие</Radio.Button>
+                  <Radio.Button value="task">Задание</Radio.Button>
+                </Radio.Group>,
+              )}
+            </FormItem>
             <FormItem {...formItemLayout} label="Название мероприятия">
               {getFieldDecorator('title', {
                 rules: [
@@ -186,7 +235,7 @@ class BasicForm extends Component<BasicFormProps> {
                 rules: [
                   {
                     required: true,
-                    message: formatMessage({ id: 'form-basic-form.goal.required' }),
+                    message: 'Это обязательное поле',
                   },
                 ],
               })(<TextArea style={{ minHeight: 32 }} rows={4} />)}

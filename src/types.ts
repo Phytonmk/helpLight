@@ -1,7 +1,7 @@
 export interface Organization {
   name: string;
   avatar: string;
-  id: string;
+  idOrganization: string;
   email: string;
   desc: string;
   title: string;
@@ -15,6 +15,7 @@ export interface Event {
   idEvent: string;
   dateFrom: string;
   dateTo: string;
+  title: string;
   workDescription: string;
   poster: string;
   peopleRequired: {
@@ -27,6 +28,12 @@ export interface Event {
   }[];
   tokens: number;
   idOrganization: number;
+  applies: {
+    volunteer: Volunteer;
+    status: 'pending' | 'approved' | 'rejected';
+    volunteerComment: string;
+    organizationComment: string;
+  }[];
 }
 
 export interface Article {
@@ -52,8 +59,10 @@ export interface Volunteer {
   about: string;
   birthday: number;
   avatar: string;
+  karma: number;
+  tokens: number;
   reviews: {
-    organization: string;
+    organization: Organization;
     content: string;
     rate: number;
   }[];

@@ -173,6 +173,18 @@ export default {
               component: './eventReg/success',
             },
             {
+              name: 'Отозвать заявку на участие',
+              icon: '',
+              path: '/refuse-event/:event',
+              component: './eventRefuse',
+            },
+            {
+              name: 'Заявка на участие отозвана',
+              icon: '',
+              path: '/refuse-event-success',
+              component: './eventRefuse/success',
+            },
+            {
               name: 'Маркет',
               icon: '',
               path: '/market',
@@ -195,6 +207,18 @@ export default {
               icon: '',
               path: '/feedback/good',
               component: './feedback/good',
+            },
+            {
+              name: 'Мероприятия',
+              icon: '',
+              path: '/events',
+              component: './events',
+            },
+            {
+              name: 'Создать мероприятие',
+              icon: '',
+              path: '/create-event',
+              component: './createEvent',
             },
             {
               path: '/form',

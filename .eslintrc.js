@@ -12,6 +12,8 @@ module.exports = {
       rules: {
         '@typescript-eslint/no-object-literal-type-assertion': 'off',
         'import/no-unresolved': 'off',
+        'jsx-a11y/label-has-associated-control': 'off',
+        'jsx-a11y/label-has-for': 'off',
       },
     },
   ],

@@ -393,7 +393,7 @@ export default {
   },
 
   'GET  /api/currentUser': {
-    name: 'Serati Ma',
+    name: 'Vasiliy Pupkin',
     avatar: 'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png',
     userid: '00000001',
     email: 'antdesign@alipay.com',

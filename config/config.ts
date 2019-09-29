@@ -171,6 +171,12 @@ export default {
               component: './organization/settings',
             },
             {
+              // name: 'Настройки организации',
+              // icon: 'setting',
+              path: '/organization/:organization',
+              component: './organization/center',
+            },
+            {
               // name: 'Заявка на участие',
               // icon: 'mail',
               path: '/apply-event/:event/:work',
@@ -194,28 +200,28 @@ export default {
               path: '/refuse-event-success',
               component: './eventRefuse/success',
             },
+            // {
+            //   name: 'Маркет',
+            //   icon: 'appstore',
+            //   path: '/market',
+            //   component: './market',
+            // },
             {
-              name: 'Маркет',
-              icon: 'appstore',
-              path: '/market',
-              component: './market',
-            },
-            {
-              name: 'Форма выгорания',
-              icon: 'profile',
-              path: '/feedback',
+              // name: 'Форма выгорания',
+              // icon: 'profile',
+              path: '/feedback/:volunteer/:event',
               component: './feedback',
             },
             {
-              name: 'Волонтеру плохо',
-              icon: 'frown',
-              path: '/feedback/bad',
+              // name: 'Волонтеру плохо',
+              // icon: 'frown',
+              path: '/feedback-bad',
               component: './feedback/bad',
             },
             {
-              name: 'Волонтеру ок',
-              icon: 'smile',
-              path: '/feedback/good',
+              // name: 'Волонтеру ок',
+              // icon: 'smile',
+              path: '/feedback-good',
               component: './feedback/good',
             },
             {
@@ -356,23 +362,23 @@ export default {
             //     },
             //   ],
             // },
-            // {
-            //   name: 'account',
-            //   icon: 'user',
-            //   path: '/account',
-            //   routes: [
-            //     {
-            //       name: 'center',
-            //       path: '/account/center',
-            //       component: './account/center',
-            //     },
-            //     {
-            //       name: 'settings',
-            //       path: '/account/settings',
-            //       component: './account/settings',
-            //     },
-            //   ],
-            // },
+            {
+              // name: 'account',
+              // icon: 'user',
+              path: '/account',
+              routes: [
+                {
+                  name: 'center',
+                  path: '/account/center',
+                  component: './account/center',
+                },
+                {
+                  name: 'settings',
+                  path: '/account/settings',
+                  component: './account/settings',
+                },
+              ],
+            },
             // {
             //   name: 'editor',
             //   icon: 'highlight',

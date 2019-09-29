@@ -90,44 +90,44 @@ export const Event = ({ event }: { event: EventType }) => {
                       actions={[
                         volunteer &&
                           (event.applications.find(
-                            application => application.idVolunteer === volunteer.idVolunteer,
+                            application =>
+                              volunteer && application.idVolunteer === volunteer.idVolunteer,
                           ) === undefined && (
                             <Link to={`/apply-event/${event.idEvent}/${stuff.work}`}>
                               Подать заявку
                             </Link>
                           )),
                         event.applications.find(
-                          application => application.idVolunteer === volunteer.idVolunteer,
+                          application =>
+                            volunteer && application.idVolunteer === volunteer.idVolunteer,
                         ) !== undefined &&
                           ((
                             event.applications.find(
-                              application => application.idVolunteer === volunteer.idVolunteer,
+                              application =>
+                                volunteer && application.idVolunteer === volunteer.idVolunteer,
                             ) || {}
                           ).wasOnEnent ? (
+                            <Link
+                              to={`/feedback/${volunteer && volunteer.idVolunteer}/${
+                                event.idOrganization
+                              }`}
+                            >
+                              Заполнить анкету
+                            </Link>
+                          ) : (
                             <Link
                               to={`/refuse-event/${
                                 (
                                   event.applications.find(
                                     application =>
+                                      application &&
+                                      volunteer &&
                                       application.idVolunteer === volunteer.idVolunteer,
                                   ) || {}
                                 ).idApplication
                               }`}
                             >
                               Отозвать заявку
-                            </Link>
-                          ) : (
-                            <Link
-                              to={`/feedback/${
-                                (
-                                  event.applications.find(
-                                    application =>
-                                      application.idVolunteer === volunteer.idVolunteer,
-                                  ) || {}
-                                ).idApplication
-                              }`}
-                            >
-                              Заполнить анкету
                             </Link>
                           )),
                       ]}

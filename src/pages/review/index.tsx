@@ -66,7 +66,7 @@ class BasicForm extends Component<BasicFormProps> {
             'http://185.251.89.17/api/ReviewOfVolunteer/AddVolunteerReview',
             {
               idReviewOfVolunteer: uuidv4(),
-              idVolunteer: this.props.match.params.application,
+              idVolunteer: this.props.match.params.volunteer,
               idOrganization: this.state.organization.idOrganization,
               idEvent: this.props.match.params.event,
               stars: values.stars,

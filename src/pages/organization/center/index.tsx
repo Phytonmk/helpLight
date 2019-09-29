@@ -140,6 +140,7 @@ class Center extends PureComponent<RouterProps, CenterState> {
     if (tabKey === 'events') {
       return <Events events={this.state.events || []} eventsLoading={this.state.eventsLoading} />;
     }
+    console.log(this.state.anal);
     if (tabKey === 'articles') {
       if (!this.state.anal) return <Spin />;
       return (
@@ -148,7 +149,7 @@ class Center extends PureComponent<RouterProps, CenterState> {
           <Pie
             hasLegend
             subTitle="Оценки пользователей"
-            total={() => <span>{this.state.anal.okReaction + this.state.anal.badReaction}</span>}
+            total={() => <span>{this.state.anal.volunteersAmount}</span>}
             colors={['#f2637b', '#fbd437', '#36cbcb', '#975fe5']}
             data={[
               { y: this.state.anal.excellentReaction, x: '5' },
@@ -162,12 +163,7 @@ class Center extends PureComponent<RouterProps, CenterState> {
           <h2>Посещение ваших мероприятий волонтерами</h2>
           <TimelineChart
             height={400}
-            data={Array(100)
-              .fill(0)
-              .map((_, index) => ({
-                x: index,
-                y: Math.random() * index,
-              }))}
+            data={this.state.anal.eventsAmountCount.map((y, x) => ({ x, y }))}
             titleMap={{
               y: 'Посещаемость мероприятий',
             }}

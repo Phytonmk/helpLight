@@ -3,6 +3,7 @@ import React, { Component, Fragment } from 'react';
 import moment from 'moment';
 import { FormComponentProps } from 'antd/es/form';
 import Axios from 'axios';
+import ID from 'uuid/v3';
 import styles from './BaseView.less';
 import { Volunteer } from '@/types';
 
@@ -46,7 +47,14 @@ class BaseView extends Component<
     const { form } = this.props;
     form.validateFields(err => {
       if (!err) {
-        const volunteer = { ...this.state.volunteer, contacts: this.props.form.getFieldsValue() };
+        const volunteer = {
+          ...this.state.volunteer,
+          contacts: {
+            ...this.props.form.getFieldsValue(),
+            idContact: ID(),
+            idVolunteer: this.state.volunteer.idVolunteer,
+          },
+        };
         this.setState({ submitting: true, volunteer });
         Axios.post('http://185.251.89.17/api/Volunteer/UpdateVolunteerInfo', volunteer, {
           headers: {
@@ -54,7 +62,6 @@ class BaseView extends Component<
           },
         })
           .then(res => {
-            console.log(res.data);
             this.setState({ submitting: false });
             message.success('Информация успешно обновлена');
           })
@@ -72,14 +79,13 @@ class BaseView extends Component<
     const {
       form: { getFieldDecorator },
     } = this.props;
-    console.log(this.state.volunteer.contacts);
     const contacts = this.state.volunteer.contacts || {};
     return (
       <div className={styles.baseView} ref={this.getViewDom}>
         <div className={styles.left}>
           <Form layout="vertical" hideRequiredMark>
             <FormItem label="Telegram">
-              {getFieldDecorator('tg', {
+              {getFieldDecorator('telegram', {
                 initialValue: contacts.telegram,
               })(<Input />)}
             </FormItem>

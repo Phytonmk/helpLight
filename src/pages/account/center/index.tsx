@@ -122,11 +122,13 @@ class Center extends PureComponent<CenterProps, CenterState> {
                 <Divider dashed />
                 <div className={styles.detail}>
                   <div>Контакты:</div>
-                  {Object.keys(volunteer.contacts || {}).map(messenger => (
-                    <p>
-                      {messenger}: {volunteer.contacts[messenger]}
-                    </p>
-                  ))}
+                  {Object.keys(volunteer.contacts || {})
+                    .filter(key => key === 'telegram' || key.length < 5)
+                    .map(messenger => (
+                      <p>
+                        {messenger}: {volunteer.contacts[messenger]}
+                      </p>
+                    ))}
                 </div>
                 <Divider dashed />
                 <div className={styles.tags}>

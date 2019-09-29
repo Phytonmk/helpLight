@@ -141,7 +141,7 @@ interface BasicFormProps extends FormComponentProps {
 }
 
 class BasicForm extends Component<BasicFormProps> {
-  state = { organization: null, loading: true, submitting: false };
+  state = { organization: 'loading', loading: true, submitting: false };
 
   componentDidMount() {
     Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
@@ -149,7 +149,6 @@ class BasicForm extends Component<BasicFormProps> {
         token: localStorage.getItem('user'),
       },
     }).then(res => {
-      console.log(res.data);
       this.setState({ organization: res.data.organization, loading: false });
     });
   }
@@ -191,8 +190,13 @@ class BasicForm extends Component<BasicFormProps> {
       form: { getFieldDecorator },
     } = this.props;
 
+    console.log(this.state.organization);
+    if (!this.state.organization) {
+      return 'Вы не можете создавать мероприятия';
+    }
+
     return (
-      <PageHeaderWrapper content={<FormattedMessage id="form-basic-form.basic.description" />}>
+      <PageHeaderWrapper>
         <Card bordered={false}>
           <Form onSubmit={this.handleSubmit} hideRequiredMark style={{ marginTop: 8 }}>
             <FormItem {...formItemLayout} label="Тип">

@@ -281,34 +281,13 @@ class Register extends Component<RegisterProps, RegisterState> {
             )}
           </FormItem>
           <FormItem help={help}>
-            <Popover
-              getPopupContainer={node => {
-                if (node && node.parentNode) {
-                  return node.parentNode as HTMLElement;
-                }
-                return node;
-              }}
-              content={
-                <div style={{ padding: '4px 0' }}>
-                  {passwordStatusMap[this.getPasswordStatus()]}
-                  {this.renderPasswordProgress()}
-                  <div style={{ marginTop: 10 }}>
-                    Пожалуйста, введите пароль в 6 или более символов
-                  </div>
-                </div>
-              }
-              overlayStyle={{ width: 240 }}
-              placement="right"
-              visible={visible}
-            >
-              {getFieldDecorator('password', {
-                rules: [
-                  {
-                    validator: this.checkPassword,
-                  },
-                ],
-              })(<Input size="large" type="password" placeholder="Пароль" />)}
-            </Popover>
+            {getFieldDecorator('password', {
+              rules: [
+                {
+                  validator: this.checkPassword,
+                },
+              ],
+            })(<Input size="large" type="password" placeholder="Пароль" />)}
           </FormItem>
           <FormItem>
             {getFieldDecorator('confirm', {

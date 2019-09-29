@@ -40,7 +40,7 @@ class BaseView extends Component<
       <>
         <List
           dataSource={this.state.volunteers}
-          locale={{ emptyText: 'Вы не состоите ни в одной организации' }}
+          locale={{ emptyText: 'Ни один волонтер не привязан к вашей организации' }}
           renderItem={(volunteer: Volunteer) => (
             <List.Item>
               <Link to={`volunteers/${volunteer.idVolunteer}`}>

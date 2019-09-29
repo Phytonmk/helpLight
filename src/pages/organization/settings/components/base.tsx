@@ -123,11 +123,6 @@ class BaseView extends Component<
                 initialValue: this.state.organization.desc,
               })(<Input.TextArea placeholder="Расскажите о себе" rows={4} />)}
             </FormItem>
-            <FormItem label="Информация об организации">
-              {getFieldDecorator('desc', {
-                initialValue: this.state.organization.desc,
-              })(<Input.TextArea placeholder="Расскажите о себе" rows={4} />)}
-            </FormItem>
             <Button type="primary" onClick={this.handlerSubmit} loading={this.state.submitting}>
               Сохранить информацию
             </Button>

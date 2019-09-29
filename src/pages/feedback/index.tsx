@@ -13,12 +13,15 @@ import {
 } from 'antd';
 import { FormattedMessage, formatMessage } from 'umi-plugin-react/locale';
 import React, { Component } from 'react';
+import uuidv4 from 'uuid/v4';
 
 import { Dispatch } from 'redux';
 import { FormComponentProps } from 'antd/es/form';
 import { PageHeaderWrapper } from '@ant-design/pro-layout';
 import { connect } from 'dva';
 import RadioGroup from 'antd/es/radio/group';
+import { router } from 'umi';
+import Axios from 'axios';
 import styles from './style.less';
 
 const FormItem = Form.Item;
@@ -37,34 +40,10 @@ class BasicForm extends Component<BasicFormProps> {
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        Axios.get(
-          `http://185.251.89.17/api/Application/WasOnEvent?applicationId=${this.props.match.params.application}`,
-          {
-            headers: {
-              token: localStorage.getItem('user'),
-            },
-          },
-        ).then(() => {
-          Axios.post(
-            'http://185.251.89.17/api/ReviewOfVolunteer/AddVolunteerReview',
-            {
-              idReviewOfVolunteer: uuidv4(),
-              idVolunteer: this.props.match.params.application,
-              idOrganization: this.state.organization.idOrganization,
-              idEvent: this.props.match.params.event,
-              stars: values.stars,
-              review: values.review,
-            },
-            {
-              headers: {
-                token: localStorage.getItem('user'),
-              },
-            },
-          ).then(() => {
-            message.success('Отзыв оставлен!');
-            router.push('/');
-          });
-        });
+        setTimeout(() => {
+          if (values.upset) router.push('/feedback-bad');
+          else router.push('/feedback-good');
+        }, 500);
       }
     });
   };
@@ -162,7 +141,7 @@ class BasicForm extends Component<BasicFormProps> {
               )}
             </FormItem>
             <FormItem {...formItemLayout} label="Любой комментарий">
-              {getFieldDecorator('invites', {
+              {getFieldDecorator('comment', {
                 rules: [
                   {
                     required: true,

@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 
 import { PageHeaderWrapper } from '@ant-design/pro-layout';
 import Axios from 'axios';
+import { Redirect } from 'umi';
 import { Event } from '@/components/Event';
 import { Event as EventType, Application, Volunteer, Organization } from '../../types';
 
@@ -45,6 +46,7 @@ class BasicList extends Component<{}, State> {
       pageSize: 5,
     };
     const { events, loading } = this.state;
+    console.log(events);
 
     const filteredEvents = events.filter(
       event =>
@@ -56,6 +58,8 @@ class BasicList extends Component<{}, State> {
             this.state.volunteer && application.idVolunteer === this.state.volunteer.idVolunteer,
         ),
     );
+
+    if (!localStorage.getItem('user')) return <Redirect to="/user/login" />;
 
     return (
       <>

@@ -37,9 +37,33 @@ class BasicForm extends Component<BasicFormProps> {
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        dispatch({
-          type: 'formBasicForm/submitRegularForm',
-          payload: values,
+        Axios.get(
+          `http://185.251.89.17/api/Application/WasOnEvent?applicationId=${this.props.match.params.application}`,
+          {
+            headers: {
+              token: localStorage.getItem('user'),
+            },
+          },
+        ).then(() => {
+          Axios.post(
+            'http://185.251.89.17/api/ReviewOfVolunteer/AddVolunteerReview',
+            {
+              idReviewOfVolunteer: uuidv4(),
+              idVolunteer: this.props.match.params.application,
+              idOrganization: this.state.organization.idOrganization,
+              idEvent: this.props.match.params.event,
+              stars: values.stars,
+              review: values.review,
+            },
+            {
+              headers: {
+                token: localStorage.getItem('user'),
+              },
+            },
+          ).then(() => {
+            message.success('Отзыв оставлен!');
+            router.push('/');
+          });
         });
       }
     });

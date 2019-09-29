@@ -9,11 +9,10 @@ import styles from './index.less';
 export interface TimelineChartProps {
   data: {
     x: number;
-    y1: number;
-    y2: number;
+    y: number;
   }[];
   title?: string;
-  titleMap: { y1: string; y2: string };
+  titleMap: { y: string };
   padding?: [number, number, number, number];
   height?: number;
   style?: React.CSSProperties;
@@ -26,23 +25,19 @@ const TimelineChart: React.FC<TimelineChartProps> = props => {
     height = 400,
     padding = [60, 20, 40, 40] as [number, number, number, number],
     titleMap = {
-      y1: 'y1',
-      y2: 'y2',
+      y: 'y',
     },
     borderWidth = 2,
     data: sourceData,
   } = props;
 
-  const data = Array.isArray(sourceData) ? sourceData : [{ x: 0, y1: 0, y2: 0 }];
+  const data = Array.isArray(sourceData) ? sourceData : [{ x: 0, y: 0 }];
 
   data.sort((a, b) => a.x - b.x);
 
   let max;
-  if (data[0] && data[0].y1 && data[0].y2) {
-    max = Math.max(
-      [...data].sort((a, b) => b.y1 - a.y1)[0].y1,
-      [...data].sort((a, b) => b.y2 - a.y2)[0].y2,
-    );
+  if (data[0] && data[0].y) {
+    max = Math.max([...data].sort((a, b) => b.y - a.y)[0].y);
   }
 
   const ds = new DataSet({
@@ -63,16 +58,15 @@ const TimelineChart: React.FC<TimelineChartProps> = props => {
     })
     .transform({
       type: 'map',
-      callback(row: { y1: string; y2: string }) {
+      callback(row: { y: string }) {
         const newRow = { ...row };
-        newRow[titleMap.y1] = row.y1;
-        newRow[titleMap.y2] = row.y2;
+        newRow[titleMap.y] = row.y;
         return newRow;
       },
     })
     .transform({
       type: 'fold',
-      fields: [titleMap.y1, titleMap.y2], // 展开字段集
+      fields: [titleMap.y], // 展开字段集
       key: 'key', // key字段
       value: 'value', // value字段
     });
@@ -98,7 +92,7 @@ const TimelineChart: React.FC<TimelineChartProps> = props => {
       width="auto"
       height={26}
       xAxis="x"
-      yAxis="y1"
+      yAxis="y"
       scales={{ x: timeScale }}
       data={data}
       start={ds.state.start}

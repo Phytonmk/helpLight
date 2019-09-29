@@ -3,18 +3,12 @@ import React, { Component } from 'react';
 import { Dispatch } from 'redux';
 import { GridContent } from '@ant-design/pro-layout';
 import { Menu } from 'antd';
-import { connect } from 'dva';
 import BaseView from './components/base';
 import { CurrentUser } from './data.d';
 import styles from './style.less';
 import Volunteers from './components/Volunteers';
 
 const { Item } = Menu;
-
-interface SettingsProps {
-  dispatch: Dispatch<any>;
-  currentUser: CurrentUser;
-}
 
 type SettingsStateKeys = 'base' | 'volunteers';
 interface SettingsState {
@@ -24,13 +18,10 @@ interface SettingsState {
   };
   selectKey: SettingsStateKeys;
 }
-@connect(({ accountSettings }: { accountSettings: { currentUser: CurrentUser } }) => ({
-  currentUser: accountSettings.currentUser,
-}))
-class Settings extends Component<SettingsProps, SettingsState> {
+class Settings extends Component<{}, SettingsState> {
   main: HTMLDivElement | undefined = undefined;
 
-  constructor(props: SettingsProps) {
+  constructor(props) {
     super(props);
     const menuMap = {
       base: 'Профиль',
@@ -44,10 +35,6 @@ class Settings extends Component<SettingsProps, SettingsState> {
   }
 
   componentDidMount() {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'accountSettings/fetchCurrent',
-    });
     window.addEventListener('resize', this.resize);
     this.resize();
   }
@@ -109,10 +96,6 @@ class Settings extends Component<SettingsProps, SettingsState> {
   };
 
   render() {
-    const { currentUser } = this.props;
-    if (!currentUser.userid) {
-      return '';
-    }
     const { mode, selectKey } = this.state;
     return (
       <GridContent>

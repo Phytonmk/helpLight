@@ -11,6 +11,7 @@ import Events from './components/Events';
 import Articles from './components/Articles';
 import { Article, Event, Organization } from '../../../types';
 import styles from './Center.less';
+import { Pie, TimelineChart } from '@/pages/dashboard/analysis/components/Charts';
 
 interface CenterState {
   tabKey: 'articles' | 'events';
@@ -140,7 +141,39 @@ class Center extends PureComponent<RouterProps, CenterState> {
       return <Events events={this.state.events || []} eventsLoading={this.state.eventsLoading} />;
     }
     if (tabKey === 'articles') {
-      return console.log(this.state.ananl);
+      if (!this.state.anal) return <Spin />;
+      return (
+        <>
+          <h2>Реакции волонтеров на ваши мероприятия</h2>
+          <Pie
+            hasLegend
+            subTitle="Оценки пользователей"
+            total={() => <span>{this.state.anal.okReaction + this.state.anal.badReaction}</span>}
+            colors={['#f2637b', '#fbd437', '#36cbcb', '#975fe5']}
+            data={[
+              { y: this.state.anal.excellentReaction, x: '5' },
+              { y: this.state.anal.goodReaction, x: '4' },
+              { y: this.state.anal.okReaction, x: '3' },
+              { y: this.state.anal.badReaction, x: '2' },
+            ]}
+            height={248}
+            lineWidth={4}
+          />
+          <h2>Посещение ваших мероприятий волонтерами</h2>
+          <TimelineChart
+            height={400}
+            data={Array(100)
+              .fill(0)
+              .map((_, index) => ({
+                x: index,
+                y: Math.random() * index,
+              }))}
+            titleMap={{
+              y: 'Посещаемость мероприятий',
+            }}
+          />
+        </>
+      );
     }
     return null;
   };

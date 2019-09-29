@@ -64,8 +64,10 @@ export const Event = ({ event }: { event: EventType }) => {
         style={{ minWidth: '100%' }}
         cover={event.poster && <img alt={event.workDescription} src={event.poster} />}
       >
-        <Card.Meta description={event.workDescription} title={event.title} />
-        <Link to={`/organization/${event.idOrganization}`}>event.idOrganization</Link>
+        <Card.Meta
+          description={event.workDescription}
+          title={<Link to={`/organization/${event.idOrganization}`}>{event.title}</Link>}
+        />
         <div>
           <div>Начнется: {moment(event.dateFrom).fromNow()}</div>
           <div>Закончится: {moment(event.dateTo).fromNow()}</div>
@@ -82,15 +84,52 @@ export const Event = ({ event }: { event: EventType }) => {
                   dataSource={event.peopleRequired}
                   renderItem={stuff => (
                     <List.Item
-                      extra={`${stuff.found}/${stuff.amount}`}
+                      extra={`${
+                        event.applications.filter(application => application.approved).length
+                      }/${stuff.amount}`}
                       actions={[
-                        volunteer && stuff.found < stuff.amount && (
-                          <Link to={`/apply-event/${event.idEvent}/${stuff.work}`}>
-                            Подать заявку
-                          </Link>
-                        ),
-                        volunteer && <Link to="/refuse-event/application">Отозвать заявку</Link>,
-                        volunteer && <Link to="/refuse-event/application">Оставить отзыв</Link>,
+                        volunteer &&
+                          (event.applications.find(
+                            application => application.idVolunteer === volunteer.idVolunteer,
+                          ) === undefined && (
+                            <Link to={`/apply-event/${event.idEvent}/${stuff.work}`}>
+                              Подать заявку
+                            </Link>
+                          )),
+                        event.applications.find(
+                          application => application.idVolunteer === volunteer.idVolunteer,
+                        ) !== undefined &&
+                          ((
+                            event.applications.find(
+                              application => application.idVolunteer === volunteer.idVolunteer,
+                            ) || {}
+                          ).wasOnEnent ? (
+                            <Link
+                              to={`/refuse-event/${
+                                (
+                                  event.applications.find(
+                                    application =>
+                                      application.idVolunteer === volunteer.idVolunteer,
+                                  ) || {}
+                                ).idApplication
+                              }`}
+                            >
+                              Отозвать заявку
+                            </Link>
+                          ) : (
+                            <Link
+                              to={`/feedback/${
+                                (
+                                  event.applications.find(
+                                    application =>
+                                      application.idVolunteer === volunteer.idVolunteer,
+                                  ) || {}
+                                ).idApplication
+                              }`}
+                            >
+                              Заполнить анкету
+                            </Link>
+                          )),
                       ]}
                     >
                       <List.Item.Meta
@@ -118,13 +157,24 @@ export const Event = ({ event }: { event: EventType }) => {
                   <List.Item
                     extra={apply.status}
                     actions={[
-                      <a href="#" onClick={() => setVisibleModal(index)}>
-                        Рассмотреть заявку
-                      </a>,
+                      !apply.approved && !apply.rejected && (
+                        <a href="#" onClick={() => setVisibleModal(index)}>
+                          Рассмотреть заявку
+                        </a>
+                      ),
+                      apply.approved && (
+                        <Link to={`/review/${apply.idVolunteer}/${apply.idApplication}`}>
+                          Оценить волонтера
+                        </Link>
+                      ),
                     ]}
                   >
                     <List.Item.Meta
-                      title="apply.volunteer.name"
+                      title={
+                        apply.volunteer
+                          ? `${apply.volunteer.firstName} ${apply.volunteer.lastName}`
+                          : `Волонтер (#${index + 1})`
+                      }
                       key={apply.idVolunteer}
                       description={apply.volunteerComment}
                     />
@@ -136,7 +186,11 @@ export const Event = ({ event }: { event: EventType }) => {
                     >
                       <p>
                         Волонтер:{' '}
-                        <Link to={`/volunteer/${apply.idVolunteer}`}>apply.volunteer.name</Link>
+                        <Link to={`/volunteer/${apply.idVolunteer}`}>
+                          {apply.volunteer
+                            ? `${apply.volunteer.firstName} ${apply.volunteer.lastName}`
+                            : `Волонтер (#${index + 1})`}
+                        </Link>
                       </p>
                       <p>Комментарий волонтера: {apply.volunteerComment || 'Отсутствует'}</p>
                       <div>

@@ -5,6 +5,8 @@ import { Dispatch } from 'redux';
 import { FormComponentProps } from 'antd/es/form';
 import { PageHeaderWrapper } from '@ant-design/pro-layout';
 import { connect } from 'dva';
+import { withRouter, router } from 'umi';
+import Axios from 'axios';
 import styles from './style.less';
 
 const FormItem = Form.Item;
@@ -15,13 +17,19 @@ interface BasicFormProps extends FormComponentProps {
 
 class BasicForm extends Component<BasicFormProps> {
   handleSubmit = (e: React.FormEvent) => {
-    const { dispatch, form } = this.props;
+    const { form } = this.props;
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        dispatch({
-          type: 'formBasicForm/submitRegularForm',
-          payload: values,
+        Axios.get(
+          `http://185.251.89.17/api/Application/RecallApplication?applicationId=${this.props.match.params.application}`,
+          {
+            headers: {
+              token: localStorage.getItem('user'),
+            },
+          },
+        ).then(res => {
+          router.push('/refuse-event-success');
         });
       }
     });
@@ -67,8 +75,10 @@ class BasicForm extends Component<BasicFormProps> {
   }
 }
 
-export default Form.create<BasicFormProps>()(
-  connect(({ loading }: { loading: { effects: { [key: string]: boolean } } }) => ({
-    submitting: loading.effects['formBasicForm/submitRegularForm'],
-  }))(BasicForm),
+export default withRouter(
+  Form.create<BasicFormProps>()(
+    connect(({ loading }: { loading: { effects: { [key: string]: boolean } } }) => ({
+      submitting: loading.effects['formBasicForm/submitRegularForm'],
+    }))(BasicForm),
+  ),
 );

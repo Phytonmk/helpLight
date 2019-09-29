@@ -30,16 +30,22 @@ export interface Event {
   }[];
   tokens: number;
   idOrganization: string;
-  applies: {
-    volunteer: Volunteer;
-    status: 'pending' | 'approved' | 'rejected';
-    volunteerComment: string;
-    organizationComment: string;
-  }[];
+  applications: Application[];
   location: string | 'home';
   tags: string[];
 }
 
+export interface Application {
+  idApplication: string;
+  volunteerComment: string;
+  organizationComment: string;
+  approved: boolean;
+  rejected: boolean;
+  recalled: boolean;
+  wasOnEnent: boolean;
+  idVolunteer: string;
+  idEvent: string;
+}
 export interface Task {
   id: string;
   idOrganization: string;
@@ -82,7 +88,7 @@ export interface Comment {
 }
 
 export interface Volunteer {
-  id: string;
+  idVolunteer: string;
   name: string;
   about: string;
   birthday: number;

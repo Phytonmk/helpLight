@@ -34,6 +34,8 @@ class Center extends PureComponent<RouterProps, CenterState> {
     organizationLoading: true,
     eventsLoading: true,
     articlesLoading: true,
+    volunteer: null,
+    anal: null,
   };
 
   public input: Input | null | undefined = undefined;
@@ -46,6 +48,16 @@ class Center extends PureComponent<RouterProps, CenterState> {
       this.props.match.params.organization
     ) {
       this.loadOrganization(this.props.match.params.organization);
+      Axios.get(
+        `http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`,
+        {
+          headers: {
+            token: localStorage.getItem('user'),
+          },
+        },
+      ).then(res => {
+        this.setState({ volunteer: res.data.volunteer });
+      });
     } else {
       Axios.get(
         `http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`,
@@ -58,6 +70,14 @@ class Center extends PureComponent<RouterProps, CenterState> {
         this.loadOrganization(res.data.organization.idOrganization);
       });
     }
+    Axios.get('http://185.251.89.17/api/Analyser/Analyze', {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      console.log(res.data);
+      this.setState({ anal: res.data });
+    });
   }
 
   onTabChange = (key: string) => {
@@ -69,18 +89,27 @@ class Center extends PureComponent<RouterProps, CenterState> {
     });
   };
 
-  submitEntering = () => {
+  submitEntering = (oId, vId) => {
     this.setState({ enterLoading: true });
-    // Axios.post('', {
-    //   enterMessage: this.state.enterMessage,
-    // })
-    this.setState({ enterLoading: false });
-    this.setState({ enterModal: false });
-    this.setState({ enterMessage: '' });
+    Axios.get(
+      `http://185.251.89.17/api/VolunteerOrganization/JoinOrganization/${oId}?volunteerId=${vId}`,
+      {
+        headers: {
+          token: localStorage.getItem('user'),
+        },
+      },
+    )
+      .then(() => {
+        this.setState({ enterLoading: false });
+        this.setState({ enterModal: false });
+        this.setState({ enterMessage: '' });
+      })
+      .catch(() => {
+        this.setState({ enterLoading: false });
+      });
   };
 
   loadOrganization(oId) {
-    console.log(oId);
     Axios.get(`http://185.251.89.17/api/Organization/GetOrganizationShortInfo/${oId}`, {
       headers: {
         token: localStorage.getItem('user'),
@@ -111,12 +140,7 @@ class Center extends PureComponent<RouterProps, CenterState> {
       return <Events events={this.state.events || []} eventsLoading={this.state.eventsLoading} />;
     }
     if (tabKey === 'articles') {
-      return (
-        <Articles
-          articles={this.state.articles || []}
-          articlesLoading={this.state.articlesLoading}
-        />
-      );
+      return console.log(this.state.ananl);
     }
     return null;
   };
@@ -140,14 +164,7 @@ class Center extends PureComponent<RouterProps, CenterState> {
       },
       {
         key: 'articles',
-        tab: (
-          <span>
-            Новости{' '}
-            <span style={{ fontSize: 14 }}>
-              ({this.state.articlesLoading ? '...' : this.state.articles.length})
-            </span>
-          </span>
-        ),
+        tab: <span>Аналитика</span>,
       },
     ];
 
@@ -185,33 +202,42 @@ class Center extends PureComponent<RouterProps, CenterState> {
                     ))}
                   </div>
                   <Divider style={{ marginTop: 16 }} dashed />
-                  {
-                    <Button type="primary" onClick={() => this.setState({ enterModal: true })}>
-                      Вступить в организацию
-                    </Button>
-                  }
-                  <Modal
-                    title="Отправить заявку"
-                    onOk={() => this.submitEntering()}
-                    visible={this.state.enterModal}
-                    onCancel={() => this.setState({ enterModal: false })}
-                    okText="Отправить заявку"
-                    cancelText="Отмена"
-                    loading={this.state.enterLoading}
-                  >
-                    <br />
-                    <br />
-                    Музей свяжется с вами чтобы подготовить документы, необходимые для волонтерской
-                    деятельности в нем. Укажите в поле ниже ваши контакты, по которым вам будет
-                    удобно связаться и немного расскажите о себе
-                    <br />
-                    <br />
-                    <TextArea
-                      placeholder="Ваши контакты и информация о себе"
-                      value={this.state.enterMessage}
-                      onChange={({ target: { value } }) => this.setState({ enterMessage: value })}
-                    />
-                  </Modal>
+                  {this.state.volunteer && (
+                    <>
+                      <Button type="primary" onClick={() => this.setState({ enterModal: true })}>
+                        Вступить в организацию
+                      </Button>
+                      <Modal
+                        title="Отправить заявку"
+                        onOk={() =>
+                          this.submitEntering(
+                            organization.idOrganization,
+                            this.state.volunteer.idVolunteer,
+                          )
+                        }
+                        visible={this.state.enterModal}
+                        onCancel={() => this.setState({ enterModal: false })}
+                        okText="Отправить заявку"
+                        cancelText="Отмена"
+                        loading={this.state.enterLoading}
+                      >
+                        <br />
+                        <br />
+                        Музей свяжется с вами чтобы подготовить документы, необходимые для
+                        волонтерской деятельности в нем. Укажите в поле ниже ваши контакты, по
+                        которым вам будет удобно связаться и немного расскажите о себе
+                        <br />
+                        <br />
+                        <TextArea
+                          placeholder="Ваши контакты и информация о себе"
+                          value={this.state.enterMessage}
+                          onChange={({ target: { value } }) =>
+                            this.setState({ enterMessage: value })
+                          }
+                        />
+                      </Modal>
+                    </>
+                  )}
                 </div>
               ) : null}
             </Card>

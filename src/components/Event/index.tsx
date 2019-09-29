@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Card, List, Divider, Modal, Button, Input } from 'antd';
+import { Card, List, Divider, Modal, Button, Input, message } from 'antd';
 import moment from 'moment-ru';
 import { Link } from 'umi';
 import ButtonGroup from 'antd/es/button/button-group';
@@ -10,35 +10,51 @@ import { Event as EventType } from '../../types';
 moment.locale('ru');
 
 export const Event = ({ event }: { event: EventType }) => {
-  const [volunteer, setVolunteer] = React.useState({});
-  const [organization, setOrganization] = React.useState({});
+  const [volunteer, setVolunteer] = React.useState(null);
+  const [organization, setOrganization] = React.useState(null);
   React.useEffect(() => {
     Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
       headers: {
         token: localStorage.getItem('user'),
       },
     }).then(res => {
-      if (res.data.volunteer) {
-        setVolunteer(res.data.volunteer);
-      }
-      if (res.data.organization) {
-        setVolunteer(res.data.organization);
+      if (res.data) {
+        if (res.data.volunteer) {
+          setVolunteer(res.data.volunteer);
+        }
+        if (res.data.organization) {
+          setOrganization(res.data.organization);
+        }
       }
     });
   }, []);
   const [visibleModal, setVisibleModal] = React.useState(-1);
   const [orgComments, setOrgComments] = React.useState({});
-  const handleModal = (index, newStatus) => {
-    const apply = index;
-    const comment = orgComments[index];
-    Axios.post('http://185.251.89.17/api/Application/CreateApplication', {
-      application: {
-        idApplication: uuidv4(),
-        volunteerComment: comment,
-        organizationComment: '',
-        idVolunteer: volunteer.idVolunteer,
-        idEvent: event.idEvent,
+
+  const approveApplication = index => {
+    Axios.get(
+      `http://185.251.89.17/api/Application/ApproveApplication?applicationId=${event.applications[index].idApplication}`,
+      {
+        headers: {
+          token: localStorage.getItem('user'),
+        },
       },
+    ).then(() => {
+      message.success('Принято');
+      setVisibleModal(-1);
+    });
+  };
+  const rejectApplication = index => {
+    Axios.get(
+      `http://185.251.89.17/api/Application/RejectApplication?applicationId=${event.applications[index].idApplication}`,
+      {
+        headers: {
+          token: localStorage.getItem('user'),
+        },
+      },
+    ).then(() => {
+      message.success('Отклонено');
+      setVisibleModal(-1);
     });
   };
   return (
@@ -48,7 +64,8 @@ export const Event = ({ event }: { event: EventType }) => {
         style={{ minWidth: '100%' }}
         cover={event.poster && <img alt={event.workDescription} src={event.poster} />}
       >
-        <Card.Meta description={event.workDescription} />
+        <Card.Meta description={event.workDescription} title={event.title} />
+        <Link to={`/organization/${event.idOrganization}`}>event.idOrganization</Link>
         <div>
           <div>Начнется: {moment(event.dateFrom).fromNow()}</div>
           <div>Закончится: {moment(event.dateTo).fromNow()}</div>
@@ -68,8 +85,12 @@ export const Event = ({ event }: { event: EventType }) => {
                       extra={`${stuff.found}/${stuff.amount}`}
                       actions={[
                         volunteer && stuff.found < stuff.amount && (
-                          <Link to="/">Подать заявку</Link>
+                          <Link to={`/apply-event/${event.idEvent}/${stuff.work}`}>
+                            Подать заявку
+                          </Link>
                         ),
+                        volunteer && <Link to="/refuse-event/application">Отозвать заявку</Link>,
+                        volunteer && <Link to="/refuse-event/application">Оставить отзыв</Link>,
                       ]}
                     >
                       <List.Item.Meta
@@ -84,7 +105,7 @@ export const Event = ({ event }: { event: EventType }) => {
             </>
           )}
 
-          {(event.idOrganization === localStorage.getItem('user') || true) && (
+          {organization && event.idOrganization === organization.idOrganization && (
             <>
               <br />
               <br />
@@ -92,7 +113,7 @@ export const Event = ({ event }: { event: EventType }) => {
               <div>Заявки:</div>
               <List
                 size="small"
-                dataSource={event.applies}
+                dataSource={event.applications}
                 renderItem={(apply, index) => (
                   <List.Item
                     extra={apply.status}
@@ -103,8 +124,8 @@ export const Event = ({ event }: { event: EventType }) => {
                     ]}
                   >
                     <List.Item.Meta
-                      title={apply.volunteer.name}
-                      key={apply.volunteer.id}
+                      title="apply.volunteer.name"
+                      key={apply.idVolunteer}
                       description={apply.volunteerComment}
                     />
                     <Modal
@@ -115,7 +136,7 @@ export const Event = ({ event }: { event: EventType }) => {
                     >
                       <p>
                         Волонтер:{' '}
-                        <Link to={`/volunteer/${apply.volunteer.id}`}>{apply.volunteer.name}</Link>
+                        <Link to={`/volunteer/${apply.idVolunteer}`}>apply.volunteer.name</Link>
                       </p>
                       <p>Комментарий волонтера: {apply.volunteerComment || 'Отсутствует'}</p>
                       <div>
@@ -131,10 +152,10 @@ export const Event = ({ event }: { event: EventType }) => {
                       <br />
                       <div>
                         <ButtonGroup>
-                          <Button type="dashed" onClick={() => handleModal(index, 'decline')}>
+                          <Button type="dashed" onClick={() => rejectApplication(index)}>
                             Отклонить заявку
                           </Button>
-                          <Button type="normal" onClick={() => handleModal(index, 'approve')}>
+                          <Button type="normal" onClick={() => approveApplication(index)}>
                             Подтвердить заявку
                           </Button>
                         </ButtonGroup>

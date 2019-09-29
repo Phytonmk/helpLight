@@ -9,6 +9,7 @@ import {
   Radio,
   Select,
   Tooltip,
+  message,
 } from 'antd';
 import { FormattedMessage, formatMessage } from 'umi-plugin-react/locale';
 import React, { Component } from 'react';
@@ -17,6 +18,9 @@ import { Dispatch } from 'redux';
 import { FormComponentProps } from 'antd/es/form';
 import { PageHeaderWrapper } from '@ant-design/pro-layout';
 import { connect } from 'dva';
+import Axios from 'axios';
+import uuidv4 from 'uuid/v4';
+import { withRouter, router } from 'umi';
 import styles from './style.less';
 
 const FormItem = Form.Item;
@@ -30,14 +34,41 @@ interface BasicFormProps extends FormComponentProps {
 }
 
 class BasicForm extends Component<BasicFormProps> {
+  state = { volunteer: null };
+
+  componentDidMount() {
+    Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      if (res.data.volunteer) {
+        this.setState({ volunteer: res.data.volunteer });
+      }
+    });
+  }
+
   handleSubmit = (e: React.FormEvent) => {
     const { dispatch, form } = this.props;
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        dispatch({
-          type: 'formBasicForm/submitRegularForm',
-          payload: values,
+        Axios.post(
+          'http://185.251.89.17/api/Application/CreateApplication',
+          {
+            idApplication: uuidv4(),
+            volunteerComment: `${values.benefits || ''}\n${values.comment || ''}`,
+            idVolunteer: this.state.volunteer.idVolunteer,
+            idEvent: this.props.match.params.event,
+          },
+          {
+            headers: {
+              token: localStorage.getItem('user'),
+            },
+          },
+        ).then(() => {
+          message.success('Заявка отправлена');
+          router.push('/apply-event-success');
         });
       }
     });
@@ -112,8 +143,10 @@ class BasicForm extends Component<BasicFormProps> {
   }
 }
 
-export default Form.create<BasicFormProps>()(
-  connect(({ loading }: { loading: { effects: { [key: string]: boolean } } }) => ({
-    submitting: loading.effects['formBasicForm/submitRegularForm'],
-  }))(BasicForm),
+export default withRouter(
+  Form.create<BasicFormProps>()(
+    connect(({ loading }: { loading: { effects: { [key: string]: boolean } } }) => ({
+      submitting: loading.effects['formBasicForm/submitRegularForm'],
+    }))(BasicForm),
+  ),
 );

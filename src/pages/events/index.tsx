@@ -1,21 +1,20 @@
 import { Form, List, Switch } from 'antd';
 import React, { Component } from 'react';
 
-import { Dispatch } from 'redux';
-import { FormComponentProps } from 'antd/es/form';
 import { PageHeaderWrapper } from '@ant-design/pro-layout';
-import { connect } from 'dva';
 import Axios from 'axios';
 import { Event } from '@/components/Event';
-import { Event as EventType } from '../../types';
+import { Event as EventType, Application, Volunteer, Organization } from '../../types';
 
 interface State {
   onlyMy: boolean;
   events: EventType[];
   loading: boolean;
+  volunteer: Volunteer | null;
+  organization: Organization | null;
 }
 class BasicList extends Component<{}, State> {
-  state: State = { onlyMy: false, events: [], loading: false };
+  state: State = { onlyMy: true, events: [], loading: false, volunteer: null, organization: null };
 
   componentDidMount() {
     Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
@@ -24,25 +23,18 @@ class BasicList extends Component<{}, State> {
       },
     }).then(res => {
       if (res.data.volunteer) {
-        // Axios.get(`http://185.251.89.17/api/Event/getAllOrganizationEvents?id=${res.data.volunteer.idVounteer}`, {
-        //   headers: {
-        //     token: localStorage.getItem('user'),
-        //   },
-        // }).then(res => {
-        //   this.setState({ events: res.data, loading: false });
-        // });
-      } else if (res.data.organization) {
-        Axios.get(
-          `http://185.251.89.17/api/Event/getAllOrganizationEvents?id=${res.data.organization.idOrganization}`,
-          {
-            headers: {
-              token: localStorage.getItem('user'),
-            },
-          },
-        ).then(res => {
-          this.setState({ events: res.data, loading: false });
-        });
+        this.setState({ volunteer: res.data.volunteer });
       }
+      if (res.data.organization) {
+        this.setState({ organization: res.data.organization });
+      }
+    });
+    Axios.get('http://185.251.89.17/api/Event/getAllEvents', {
+      headers: {
+        token: localStorage.getItem('user'),
+      },
+    }).then(res => {
+      this.setState({ events: res.data, loading: false });
     });
   }
 
@@ -57,7 +49,12 @@ class BasicList extends Component<{}, State> {
     const filteredEvents = events.filter(
       event =>
         !this.state.onlyMy ||
-        (event.applies || []).find(apply => apply.id === localStorage.getItem('user')),
+        (this.state.organization &&
+          event.idOrganization === this.state.organization.idOrganization) ||
+        (event.applications || []).find(
+          (application: Application) =>
+            this.state.volunteer && application.idVolunteer === this.state.volunteer.idVolunteer,
+        ),
     );
 
     return (

@@ -8,11 +8,11 @@ import { Volunteer, Organization } from '@/types';
 
 class BaseView extends Component<
   FormComponentProps,
-  { organization: Organization | null; loading: boolean }
+  { volunteers: Volunteer[]; loading: boolean }
 > {
   view: HTMLDivElement | undefined = undefined;
 
-  state = { organization: null, loading: true };
+  state = { volunteers: [], loading: true };
 
   componentDidMount() {
     Axios.get(`http://185.251.89.17/api/User/GetUserInfo?userId=${localStorage.getItem('user')}`, {
@@ -20,20 +20,30 @@ class BaseView extends Component<
         token: localStorage.getItem('user'),
       },
     }).then(res => {
-      this.setState({ organization: res.data.organization, loading: false });
+      Axios.get(
+        `http://185.251.89.17/api/VolunteerOrganization/GetVolunteersByOrganization/${res.data.organization.idOrganization}`,
+        {
+          headers: {
+            token: localStorage.getItem('user'),
+          },
+        },
+      ).then(res => {
+        this.setState({ volunteers: res.data, loading: false });
+      });
     });
   }
 
   render() {
     if (this.state.loading) return <Spin />;
+
     return (
       <>
         <List
-          dataSource={this.state.organization.volunteers}
+          dataSource={this.state.volunteers}
           locale={{ emptyText: 'Вы не состоите ни в одной организации' }}
           renderItem={(volunteer: Volunteer) => (
             <List.Item>
-              <Link to={`volunteers/${volunteer.id}`}>
+              <Link to={`volunteers/${volunteer.idVolunteer}`}>
                 {volunteer.firstName} {volunteer.lastName}
               </Link>
             </List.Item>
